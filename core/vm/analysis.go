@@ -16,6 +16,11 @@
 
 package vm
 
+import (
+	"github.com/ethereum/go-ethereum/common"
+	lru "github.com/hashicorp/golang-lru"
+)
+
 const (
 	set2BitsMask = uint16(0b1100_0000_0000_0000)
 	set3BitsMask = uint16(0b1110_0000_0000_0000)
@@ -33,6 +38,9 @@ type bitvec []byte
 var lookup = [8]byte{
 	0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1,
 }
+
+const codeBitmapCacheSize = 10000
+var codeBitmapCache, _ = lru.NewARC(codeBitmapCacheSize)
 
 func (bits bitvec) set1(pos uint64) {
 	bits[pos/8] |= lookup[pos%8]
@@ -73,6 +81,20 @@ func codeBitmap(code []byte) bitvec {
 	// bitvector outside the bounds of the actual code.
 	bits := make(bitvec, len(code)/8+1+4)
 	return codeBitmapInternal(code, bits)
+}
+
+func codeBitmapWithCache(code []byte, codeHash common.Hash) bitvec {
+	if (codeHash == emptyCodeHash || codeHash == common.Hash{}) {
+		return nil
+	}
+
+	if val, ok := codeBitmapCache.Get(codeHash); ok {
+		return val.(bitvec)
+	} else {
+		val := codeBitmap(code)
+		codeBitmapCache.Add(codeHash, val)
+		return val
+	}
 }
 
 // codeBitmapInternal is the internal implementation of codeBitmap.
