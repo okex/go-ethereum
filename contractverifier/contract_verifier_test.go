@@ -1,4 +1,4 @@
-package okverifier
+package contractverifier
 
 import (
 	"encoding/json"
@@ -30,12 +30,12 @@ const (
 	NORMAL_CALL
 )
 
-type OKVerifierTest struct {
+type contractVerifierTest struct {
 	verifiers []verifierTest
 }
 
-func NewContractVerifier() *OKVerifierTest {
-	return &OKVerifierTest{verifiers: make([]verifierTest, 0)}
+func NewContractVerifier() *contractVerifierTest {
+	return &contractVerifierTest{verifiers: make([]verifierTest, 0)}
 }
 
 type verifierTest struct {
@@ -58,7 +58,7 @@ func NewVerifierTest(verifierType int, op vm.OpCode, from, to common.Address, in
 	}
 }
 
-func (cv *OKVerifierTest) Verify(stateDB vm.StateDB, op vm.OpCode, from, to common.Address, input []byte, value *big.Int) error {
+func (cv *contractVerifierTest) Verify(stateDB vm.StateDB, op vm.OpCode, from, to common.Address, input []byte, value *big.Int) error {
 	verifierTest := NewVerifierTest(UNKNOWN, op, from, to, input, value)
 	if op == vm.SELFDESTRUCT {
 		verifierTest.VerifierType = SELFDESTRUCT
@@ -215,7 +215,7 @@ func TestOKVerify(t *testing.T) {
 			_, statedb := makePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
 
 			verifierTest := NewContractVerifier()
-			evm := vm.NewEVM(context, txContext, statedb, test.Genesis.Config, vm.Config{OKVerifier: verifierTest})
+			evm := vm.NewEVM(context, txContext, statedb, test.Genesis.Config, vm.Config{ContractVerifier: verifierTest})
 
 			msg, err := tx.AsMessage(signer, nil)
 			if err != nil {

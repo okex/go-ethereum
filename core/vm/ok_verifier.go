@@ -5,6 +5,6 @@ import (
 	"math/big"
 )
 
-type OKVerifier interface {
+type ContractVerifier interface {
 	Verify(stateDB StateDB, op OpCode, from, to common.Address, input []byte, value *big.Int) error
 }

@@ -179,8 +179,8 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	// Verify call function.
 	// It must be verified before evm.stateDB snapshot for avoiding reverting to snapshot.
 	// It doesn't consume gas.
-	if evm.Config.OKVerifier != nil {
-		if err := evm.Config.OKVerifier.Verify(evm.StateDB, CALL, caller.Address(), addr, input, value); err != nil {
+	if evm.Config.ContractVerifier != nil {
+		if err := evm.Config.ContractVerifier.Verify(evm.StateDB, CALL, caller.Address(), addr, input, value); err != nil {
 			return nil, gas, err
 		}
 	}
@@ -267,8 +267,8 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	// Verify call function.
 	// It must be verified before evm.stateDB snapshot for avoiding reverting to snapshot.
 	// It doesn't consume gas.
-	if evm.Config.OKVerifier != nil {
-		if err := evm.Config.OKVerifier.Verify(evm.StateDB, CALLCODE, caller.Address(), addr, input, value); err != nil {
+	if evm.Config.ContractVerifier != nil {
+		if err := evm.Config.ContractVerifier.Verify(evm.StateDB, CALLCODE, caller.Address(), addr, input, value); err != nil {
 			return nil, gas, err
 		}
 	}
@@ -311,8 +311,8 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	// Verify call function.
 	// It must be verified before evm.stateDB snapshot for avoiding reverting to snapshot.
 	// It doesn't consume gas.
-	if evm.Config.OKVerifier != nil {
-		if err := evm.Config.OKVerifier.Verify(evm.StateDB, DELEGATECALL, caller.Address(), addr, input, big0); err != nil {
+	if evm.Config.ContractVerifier != nil {
+		if err := evm.Config.ContractVerifier.Verify(evm.StateDB, DELEGATECALL, caller.Address(), addr, input, big0); err != nil {
 			return nil, gas, err
 		}
 	}
@@ -353,8 +353,8 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	// Verify call function.
 	// It must be verified before evm.stateDB snapshot for avoiding reverting to snapshot.
 	// It doesn't consume gas.
-	if evm.Config.OKVerifier != nil {
-		if err := evm.Config.OKVerifier.Verify(evm.StateDB, STATICCALL, caller.Address(), addr, input, big0); err != nil {
+	if evm.Config.ContractVerifier != nil {
+		if err := evm.Config.ContractVerifier.Verify(evm.StateDB, STATICCALL, caller.Address(), addr, input, big0); err != nil {
 			return nil, gas, err
 		}
 	}
