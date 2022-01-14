@@ -88,13 +88,13 @@ func (st *Stack) Back(n int) *uint256.Int {
 
 // Print dumps the content of the stack
 func (st *Stack) Print() {
-	fmt.Println("### stack ###")
+	ans := ""
 	if len(st.data) > 0 {
-		for i, val := range st.data {
-			fmt.Printf("%-3d  %v\n", i, val)
+		for _, val := range st.data {
+			ans += fmt.Sprintf("%v ", val.String())
 		}
 	} else {
 		fmt.Println("-- empty --")
 	}
-	fmt.Println("#############")
+	fmt.Println("Stakck", ans)
 }
