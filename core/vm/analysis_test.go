@@ -56,6 +56,7 @@ func TestJumpDestAnalysis(t *testing.T) {
 }
 
 func BenchmarkJumpdestAnalysis_1200k(bench *testing.B) {
+	enableBitmapCache = false
 	// 1.4 ms
 	code := make([]byte, 1200000)
 	bench.ResetTimer()
@@ -75,6 +76,7 @@ func BenchmarkJumpdestHashing_1200k(bench *testing.B) {
 }
 
 func BenchmarkJumpdestOpAnalysis(bench *testing.B) {
+	enableBitmapCache = false
 	var op OpCode
 	bencher := func(b *testing.B) {
 		code := make([]byte, 32*b.N)
@@ -92,4 +94,20 @@ func BenchmarkJumpdestOpAnalysis(bench *testing.B) {
 	bench.Run(op.String(), bencher)
 	op = STOP
 	bench.Run(op.String(), bencher)
+}
+
+func BenchmarkJumpdestAnalysis_1200k_enableCache(bench *testing.B) {
+	enableBitmapCache = true
+	// 1.4 ms
+	code := make([]byte, 1200000)
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		codeBitmap(code)
+	}
+	bench.StopTimer()
+}
+
+func Benchmark_lifei(b *testing.B) {
+	b.Run("disable cache", BenchmarkJumpdestAnalysis_1200k)
+	b.Run("enable cache", BenchmarkJumpdestAnalysis_1200k_enableCache)
 }
