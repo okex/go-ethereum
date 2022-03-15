@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -30,18 +30,18 @@ const (
 	set7BitsMask = uint16(0b1111_1110_0000_0000)
 )
 
+const codeBitmapCacheSize = 10000
+
+var codeBitmapCache, _ = lru.NewARC(codeBitmapCacheSize)
+
 // bitvec is a bit vector which maps bytes in a program.
 // An unset bit means the byte is an opcode, a set bit means
 // it's data (i.e. argument of PUSHxx).
 type bitvec []byte
 
-var (
-	lookup = [8]byte{
-		0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1,
-	}
-	bitmapCache, _    = lru.NewARC(10000)
-	enableBitmapCache = true
-)
+var lookup = [8]byte{
+	0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1,
+}
 
 func (bits bitvec) set1(pos uint64) {
 	bits[pos/8] |= lookup[pos%8]
@@ -80,20 +80,8 @@ func codeBitmap(code []byte) bitvec {
 	// The bitmap is 4 bytes longer than necessary, in case the code
 	// ends with a PUSH32, the algorithm will push zeroes onto the
 	// bitvector outside the bounds of the actual code.
-	var key string
-	if enableBitmapCache {
-		key = crypto.Keccak256Hash(code).Hex()
-		if value, ok := bitmapCache.Get(key); ok {
-			return value.(bitvec)
-		}
-	}
-
 	bits := make(bitvec, len(code)/8+1+4)
-	result := codeBitmapInternal(code, bits)
-	if enableBitmapCache {
-		bitmapCache.Add(key, result)
-	}
-	return result
+	return codeBitmapInternal(code, bits)
 }
 
 // codeBitmapInternal is the internal implementation of codeBitmap.
@@ -142,4 +130,18 @@ func codeBitmapInternal(code, bits bitvec) bitvec {
 		}
 	}
 	return bits
+}
+
+func codeBitmapWithCache(code []byte, codeHash common.Hash) bitvec {
+	if (codeHash == emptyCodeHash || codeHash == common.Hash{}) {
+		return nil
+	}
+
+	if val, ok := codeBitmapCache.Get(codeHash); ok {
+		return val.(bitvec)
+	} else {
+		val := codeBitmap(code)
+		codeBitmapCache.Add(codeHash, val)
+		return val
+	}
 }
