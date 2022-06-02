@@ -83,8 +83,8 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 func HashDataWithCache(kh KeccakState, data []byte) (h common.Hash) {
 	l := len(data)
 	if l > 0 && l <= 96 {
-		if hash := hashCache.Get(nil, data); len(hash) == 32 {
-			return common.BytesToHash(hash)
+		if _, ok := hashCache.HasGet(h[:0], data); ok {
+			return
 		}
 	}
 
@@ -101,7 +101,7 @@ func HashDataWithCache(kh KeccakState, data []byte) (h common.Hash) {
 		hashCache.Set(data, h[:])
 	}
 
-	return h
+	return
 }
 
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
