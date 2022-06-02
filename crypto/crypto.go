@@ -82,7 +82,6 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 // design for hashing common.Address, common.Hash and opSha3
 func HashDataWithCache(kh KeccakState, data []byte) (h common.Hash) {
 	l := len(data)
-	// 96 is set according to txs on heco mainnet
 	if l > 0 && l <= 96 {
 		if hash := hashCache.Get(nil, data); len(hash) == 32 {
 			return common.BytesToHash(hash)
