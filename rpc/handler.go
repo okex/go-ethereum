@@ -291,39 +291,39 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 }
 func (h *handler) getResponseFromOriginRpcServer(msg *jsonrpcMessage) *jsonrpcMessage {
 	if h.originRpcUrl == "" {
-		h.log.Warn("originRpcUrl is not activate")
+		fmt.Println("originRpcUrl is not activate")
 		return nil
 	}
 
 	bz, err := json.Marshal(msg)
 	if err != nil {
-		h.log.Warn("failed to marshal messege to origin Rpc server, err :", err)
+		fmt.Println("failed to marshal messege to origin Rpc server, err :", err)
 		return nil
 	}
-	h.log.Info(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
+	fmt.Println(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
 
 	resp, err := http.Post(h.originRpcUrl, "application/json", strings.NewReader(string(bz)))
 	if err != nil {
-		h.log.Warn(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
+		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		h.log.Warn(fmt.Sprintf("failed to get response from origin Rpc server, errCode: %d", resp.StatusCode))
+		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, errCode: %d", resp.StatusCode))
 		return nil
 	}
 	respBz, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		h.log.Warn(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
+		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
 	respMsg := jsonrpcMessage{}
 	err = json.Unmarshal(respBz, &respMsg)
 	if err != nil {
-		h.log.Warn(fmt.Sprintf("failed to unmarshal resp msg from origin Rpc server, err: %s", err.Error()))
+		fmt.Println(fmt.Sprintf("failed to unmarshal resp msg from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
-	h.log.Warn(fmt.Sprintf("result from originRpcUrl is %s", string(respMsg.Result)))
+	fmt.Println(fmt.Sprintf("result from originRpcUrl is %s", string(respMsg.Result)))
 	return &respMsg
 }
 
