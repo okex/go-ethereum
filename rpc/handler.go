@@ -430,9 +430,7 @@ func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *cal
 	result, err := callb.call(ctx, msg.Method, args)
 	if h.originRpcUrl != "" {
 		if err != nil || reflect.ValueOf(result).IsNil() {
-			fmt.Println("post msg:", msg)
 			result = h.getResponseFromOriginRpcServer(msg)
-			fmt.Println("get result:", result)
 			return msg.response(result)
 		}
 	}
