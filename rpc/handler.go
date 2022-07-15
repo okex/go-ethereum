@@ -428,7 +428,7 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 // runMethod runs the Go callback for an RPC method.
 func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
-	fmt.Println("rpc ulr: ", h.originRpcUrl)
+	fmt.Println("rpc ulr: ", h.originRpcUrl, "err = ", err, ",result=", result)
 	if h.originRpcUrl != "" && (err != nil || result == nil) {
 		result = h.getResponseFromOriginRpcServer(msg)
 		fmt.Println(" err != nil || result == nil, get result:", result)
