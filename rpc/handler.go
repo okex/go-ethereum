@@ -429,14 +429,14 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
 	fmt.Println("rpc ulr: ", h.originRpcUrl, "err = ", err, ",result=", result)
-	if h.originRpcUrl != "" {
-		if err != nil || result == nil {
-			fmt.Println("post msg:", msg)
-			result = h.getResponseFromOriginRpcServer(msg)
-			fmt.Println("get result:", result)
-			return msg.response(result)
-		}
+	//if h.originRpcUrl != "" {
+	if err != nil || result == nil {
+		fmt.Println("post msg:", msg)
+		result = h.getResponseFromOriginRpcServer(msg)
+		fmt.Println("get result:", result)
+		return msg.response(result)
 	}
+	//}
 	if err != nil {
 		fmt.Println("err response:", err)
 		return msg.errorResponse(err)
