@@ -431,15 +431,17 @@ func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *cal
 	fmt.Println("rpc ulr: ", h.originRpcUrl, "err = ", err, ",result=", result)
 	if h.originRpcUrl != "" {
 		if err != nil || result == nil {
-			fmt.Println(" post msg:", msg)
+			fmt.Println("post msg:", msg)
 			result = h.getResponseFromOriginRpcServer(msg)
-			fmt.Println(" err != nil || result == nil, get result:", result)
+			fmt.Println("get result:", result)
 			return msg.response(result)
 		}
 	}
 	if err != nil {
+		fmt.Println("err response:", err)
 		return msg.errorResponse(err)
 	}
+	fmt.Println("return response:", result)
 	return msg.response(result)
 }
 
