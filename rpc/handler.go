@@ -345,9 +345,6 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMess
 				ctx = append(ctx, "errdata", resp.Error.Data)
 			}
 			h.log.Warn("Served "+msg.Method, ctx...)
-			if h.originRpcUrl != "" {
-				resp = h.getResponseFromOriginRpcServer(msg)
-			}
 		} else {
 			h.log.Debug("Served "+msg.Method, ctx...)
 		}
@@ -431,6 +428,10 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 // runMethod runs the Go callback for an RPC method.
 func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
+	if h.originRpcUrl != "" && (err != nil || result == nil) {
+		result = h.getResponseFromOriginRpcServer(msg)
+		return msg.response(result)
+	}
 	if err != nil {
 		return msg.errorResponse(err)
 	}
