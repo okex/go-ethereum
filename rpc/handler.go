@@ -291,39 +291,39 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 }
 func (h *handler) getResponseFromOriginRpcServer(msg *jsonrpcMessage) *jsonrpcMessage {
 	if h.originRpcUrl == "" {
-		fmt.Println("originRpcUrl is not activate")
+		h.log.Info("originRpcUrl is not activate")
 		return nil
 	}
 
 	bz, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Println("failed to marshal messege to origin Rpc server, err :", err)
+		h.log.Error("failed to marshal messege to origin Rpc server, err :", err)
 		return nil
 	}
-	fmt.Println(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
+	h.log.Info(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
 
 	resp, err := http.Post(h.originRpcUrl, "application/json", strings.NewReader(string(bz)))
 	if err != nil {
-		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
+		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, errCode: %d", resp.StatusCode))
+		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, errCode: %d", resp.StatusCode))
 		return nil
 	}
 	respBz, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
+		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
 	respMsg := jsonrpcMessage{}
 	err = json.Unmarshal(respBz, &respMsg)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("failed to unmarshal resp msg from origin Rpc server, err: %s", err.Error()))
+		h.log.Error(fmt.Sprintf("failed to unmarshal resp msg from origin Rpc server, err: %s", err.Error()))
 		return nil
 	}
-	fmt.Println(fmt.Sprintf("result from originRpcUrl is %s", string(respMsg.Result)))
+	h.log.Info(fmt.Sprintf("result from originRpcUrl is %s", string(respMsg.Result)))
 	return &respMsg
 }
 
