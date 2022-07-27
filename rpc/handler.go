@@ -65,7 +65,7 @@ type handler struct {
 	log            log.Logger
 	allowSubscribe bool
 	originRpcUrl   string
-	infuraMethods map[string]struct{}
+	infuraMethods  map[string]struct{}
 
 	subLock    sync.Mutex
 	serverSubs map[ID]*Subscription
@@ -436,7 +436,7 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 // runMethod runs the Go callback for an RPC method.
 func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
-	if h.originRpcUrl != "" {
+	if h.originRpcUrl != "" && (msg.Method != "eth_getLogs" || msg.Method != "eth_getBlockByNumber") {
 		if err != nil || reflect.ValueOf(result).IsNil() {
 			ret, err := h.getResponseFromOriginRpcServer(msg)
 			if err != nil {
