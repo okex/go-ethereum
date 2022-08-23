@@ -19,9 +19,6 @@ package rpc
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,6 +26,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	bal "github.com/smallnest/weighted"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -64,7 +62,7 @@ type handler struct {
 	conn           jsonWriter                     // where responses will be sent
 	log            log.Logger
 	allowSubscribe bool
-	originRpcUrl   string
+	balancer       *bal.SW
 
 	subLock    sync.Mutex
 	serverSubs map[ID]*Subscription
@@ -289,43 +287,6 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 		h.clientSubs[op.sub.subid] = op.sub
 	}
 }
-func (h *handler) getResponseFromOriginRpcServer(msg *jsonrpcMessage) *jsonrpcMessage {
-	if h.originRpcUrl == "" {
-		h.log.Info("originRpcUrl is not activate")
-		return nil
-	}
-
-	bz, err := json.Marshal(msg)
-	if err != nil {
-		h.log.Error("failed to marshal messege to origin Rpc server, err :", err)
-		return nil
-	}
-	h.log.Info(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
-
-	resp, err := http.Post(h.originRpcUrl, "application/json", strings.NewReader(string(bz)))
-	if err != nil {
-		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
-		return nil
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, errCode: %d", resp.StatusCode))
-		return nil
-	}
-	respBz, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		h.log.Error(fmt.Sprintf("failed to get response from origin Rpc server, err: %s", err.Error()))
-		return nil
-	}
-	respMsg := jsonrpcMessage{}
-	err = json.Unmarshal(respBz, &respMsg)
-	if err != nil {
-		h.log.Error(fmt.Sprintf("failed to unmarshal resp msg from origin Rpc server, err: %s", err.Error()))
-		return nil
-	}
-	h.log.Info(fmt.Sprintf("result from originRpcUrl is %s", string(respMsg.Result)))
-	return &respMsg
-}
 
 // handleCallMsg executes a call message and returns the answer.
 func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
@@ -428,7 +389,7 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 // runMethod runs the Go callback for an RPC method.
 func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
-	if h.originRpcUrl != "" {
+	if h.balancer != nil {
 		if err != nil || reflect.ValueOf(result).IsNil() {
 			result = h.getResponseFromOriginRpcServer(msg)
 			return msg.response(result)

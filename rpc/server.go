@@ -23,6 +23,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/log"
+	bal "github.com/smallnest/weighted"
 )
 
 const MetadataApi = "rpc"
@@ -42,11 +43,11 @@ const (
 
 // Server is an RPC server.
 type Server struct {
-	services     serviceRegistry
-	idgen        func() ID
-	run          int32
-	codecs       mapset.Set
-	OriginRpcUrl string
+	services serviceRegistry
+	idgen    func() ID
+	run      int32
+	codecs   mapset.Set
+	balancer *bal.SW
 }
 
 // NewServer creates a new server instance with no registered handlers.
@@ -100,7 +101,7 @@ func (s *Server) serveSingleRequest(ctx context.Context, codec ServerCodec) {
 
 	h := newHandler(ctx, codec, s.idgen, &s.services)
 	h.allowSubscribe = false
-	h.originRpcUrl = s.OriginRpcUrl
+	h.balancer = s.balancer
 	defer h.close(io.EOF, nil)
 
 	reqs, batch, err := codec.readBatch()
