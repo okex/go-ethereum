@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	bal "github.com/smallnest/weighted"
+	bal "github.com/zehuamama/balancer/balancer"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -64,7 +64,7 @@ type handler struct {
 	log            log.Logger
 	allowSubscribe bool
 	infuraMethods  map[string]struct{}
-	balancer       *bal.SW
+	balancer       bal.Balancer
 
 	subLock    sync.Mutex
 	serverSubs map[ID]*Subscription

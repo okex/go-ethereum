@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"strings"
 
-	bal "github.com/smallnest/weighted"
+	bal "github.com/zehuamama/balancer/balancer"
 )
 
-func (s *Server) SetBackends(urls []string) {
-	s.balancer = &bal.SW{}
-	for _, url := range urls {
-		s.balancer.Add(url, 1) // set weight = 1 for all rpc backends
-	}
+func (s *Server) SetBackends(urls []string) error {
+	var err error
+	s.balancer, err = bal.Build(bal.R2Balancer, urls)
+	return err
 }
 func (h *handler) getResponseFromOriginRpcServer(msg *jsonrpcMessage) (*jsonrpcMessage, error) {
 	if h.balancer == nil {
@@ -29,10 +28,9 @@ func (h *handler) getResponseFromOriginRpcServer(msg *jsonrpcMessage) (*jsonrpcM
 	}
 	h.log.Info(fmt.Sprintf("post (%s) to originRpcUrl", string(bz)))
 
-	url, ok := h.balancer.Next().(string)
-	if !ok {
-		err := fmt.Errorf("failed to get url as string from balancer")
-		h.log.Error(err.Error())
+	url, err := h.balancer.Balance("")
+	if err != nil {
+		h.log.Error("failed to get url as string from balancer, err : ", err.Error())
 		return nil, err
 	}
 

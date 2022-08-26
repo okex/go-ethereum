@@ -23,7 +23,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/log"
-	bal "github.com/smallnest/weighted"
+	bal "github.com/zehuamama/balancer/balancer"
 )
 
 const MetadataApi = "rpc"
@@ -48,7 +48,7 @@ type Server struct {
 	run           int32
 	codecs        mapset.Set
 	InfuraMethods map[string]struct{}
-	balancer      *bal.SW
+	balancer      bal.Balancer
 }
 
 // NewServer creates a new server instance with no registered handlers.
