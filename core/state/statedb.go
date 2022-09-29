@@ -117,6 +117,7 @@ type StateDB struct {
 	StorageReads         time.Duration
 	StorageHashes        time.Duration
 	StorageUpdates       time.Duration
+	StorageDeletes       time.Duration
 	StorageCommits       time.Duration
 	SnapshotAccountReads time.Duration
 	SnapshotStorageReads time.Duration
@@ -986,7 +987,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 			if err != nil {
 				return common.Hash{}, err
 			}
-			// Merge the dirty nodes of storage trie into global set
+			// Merge the dirty nodes of storage trie into global set.
 			if set != nil {
 				if err := nodes.Merge(set); err != nil {
 					return common.Hash{}, err
@@ -1071,7 +1072,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	if root != origin {
 		start := time.Now()
-		if err := s.db.TrieDB().Update(nodes); err != nil {
+		if err := s.db.TrieDB().Update(root, origin, nodes); err != nil {
 			return common.Hash{}, err
 		}
 		s.originalRoot = root

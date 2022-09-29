@@ -203,7 +203,7 @@ func (t *testHelper) Commit() common.Hash {
 	if nodes != nil {
 		t.nodes.Merge(nodes)
 	}
-	t.triedb.Update(t.nodes)
+	t.triedb.Update(root, common.Hash{}, t.nodes)
 	t.triedb.Commit(root, false)
 	return root
 }
