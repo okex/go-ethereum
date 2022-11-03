@@ -827,6 +827,13 @@ func opSelfdestruct(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext
 	}
 	beneficiary := scope.Stack.pop()
 	balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
+	// Verify SELFDESTRUCT opCode.
+	// It doesn't consume gas.
+	if interpreter.evm.Config.ContractVerifier != nil {
+		if err := interpreter.evm.Config.ContractVerifier.Verify(interpreter.evm.StateDB, SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), nil, balance); err != nil {
+			return nil, err
+		}
+	}
 	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
 	interpreter.evm.StateDB.Suicide(scope.Contract.Address())
 	if interpreter.cfg.Debug {
