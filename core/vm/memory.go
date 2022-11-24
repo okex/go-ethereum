@@ -113,7 +113,7 @@ func (m *Memory) Print() string {
 	if len(m.store) > 0 {
 		addr := 0
 		for i := 0; i+32 <= len(m.store); i += 32 {
-			ss += fmt.Sprintf("%03d: % x\n", addr, m.store[i:i+32])
+			ss += fmt.Sprintf("%03d: % x  ", addr, m.store[i:i+32])
 			addr++
 		}
 	} else {
