@@ -108,16 +108,16 @@ func (m *Memory) Data() []byte {
 }
 
 // Print dumps the content of the memory.
-func (m *Memory) Print() {
-	fmt.Printf("### mem %d bytes ###\n", len(m.store))
+func (m *Memory) Print() string {
+	ss := ""
 	if len(m.store) > 0 {
 		addr := 0
 		for i := 0; i+32 <= len(m.store); i += 32 {
-			fmt.Printf("%03d: % x\n", addr, m.store[i:i+32])
+			ss += fmt.Sprintf("%03d: % x\n", addr, m.store[i:i+32])
 			addr++
 		}
 	} else {
 		fmt.Println("-- empty --")
 	}
-	fmt.Println("####################")
+	return ss
 }
