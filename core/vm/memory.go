@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/holiman/uint256"
@@ -111,10 +112,8 @@ func (m *Memory) Data() []byte {
 func (m *Memory) Print() string {
 	ss := ""
 	if len(m.store) > 0 {
-		addr := 0
 		for i := 0; i+32 <= len(m.store); i += 32 {
-			ss += fmt.Sprintf("%03d: % x  ", addr, m.store[i:i+32])
-			addr++
+			ss += fmt.Sprintf(" %v ", hex.EncodeToString(m.store[i:i+32]))
 		}
 	} else {
 		fmt.Println("-- empty --")
