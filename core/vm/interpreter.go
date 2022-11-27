@@ -117,8 +117,17 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 // It's important to note that any errors returned by the interpreter should be
 // considered a revert-and-consume-all-gas operation except for
 // ErrExecutionReverted which means revert-and-keep-gas-left.
-func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
 
+var (
+	ss = ""
+)
+
+func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	defer func() {
+		fmt.Println("EVMInterpreter.run end", ss)
+	}()
+
+	ss = ""
 	fmt.Println("EVMInterpreter", "run", contract.CallerAddress.String(), contract.Address().String())
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
@@ -197,7 +206,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
-		fmt.Println("op", op, contract.Gas, stack.Print(), mem.Print())
+		ss += fmt.Sprintf("%v-%d ", op, contract.Gas)
 		operation := in.cfg.JumpTable[op]
 		if operation == nil {
 			return nil, &ErrInvalidOpCode{opcode: op}
