@@ -119,12 +119,18 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 // ErrExecutionReverted which means revert-and-keep-gas-left.
 
 var (
-	ss = ""
+	ss     = ""
+	Height = 0
+	aim    = 15482003
 )
 
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+
 	defer func() {
-		fmt.Println("EVMInterpreter.run end", ss)
+		if Height == aim {
+			fmt.Println("EVMInterpreter.run end", ss)
+		}
+
 	}()
 
 	ss = ""
@@ -206,7 +212,10 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
-		ss += fmt.Sprintf("%v-%d ", op, contract.Gas)
+		if Height == aim {
+			ss += fmt.Sprintf("%v-%d ", op, contract.Gas)
+		}
+
 		operation := in.cfg.JumpTable[op]
 		if operation == nil {
 			return nil, &ErrInvalidOpCode{opcode: op}
