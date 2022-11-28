@@ -119,24 +119,11 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 // ErrExecutionReverted which means revert-and-keep-gas-left.
 
 var (
-	ss           = ""
-	Height       = 0
-	aim          = 15482003
-	alreadyPrint = false
+	Ss       = ""
+	PrintLog = false
 )
 
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
-
-	defer func() {
-		if Height == aim && !alreadyPrint {
-			fmt.Println("EVMInterpreter.run end", ss)
-			alreadyPrint = true
-		}
-
-	}()
-
-	ss = ""
-	fmt.Println("EVMInterpreter", "run", contract.CallerAddress.String(), contract.Address().String())
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()
@@ -214,8 +201,9 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
-		if Height == aim {
-			ss += fmt.Sprintf("%v-%d ", op, contract.Gas)
+
+		if PrintLog {
+			Ss += fmt.Sprintf("%v-%d ", op, contract.Gas)
 		}
 
 		operation := in.cfg.JumpTable[op]

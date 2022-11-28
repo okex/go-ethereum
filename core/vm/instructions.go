@@ -509,9 +509,11 @@ func opSload(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]by
 	hash := common.Hash(loc.Bytes32())
 	val := interpreter.evm.StateDB.GetState(scope.Contract.Address(), hash)
 	loc.SetBytes(val.Bytes())
-	if Height == aim && alreadyPrint == false {
-		fmt.Println("opSload", scope.Contract.Address().String(), hash.String(), val.String())
+
+	if PrintLog {
+		Ss += fmt.Sprintf("opSload %s %s %s", scope.Contract.Address().String(), hash.String(), val.String())
 	}
+
 	return nil, nil
 }
 
