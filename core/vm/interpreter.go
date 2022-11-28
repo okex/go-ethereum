@@ -205,7 +205,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		op = contract.GetOp(pc)
 
 		if PrintLog && CurrentTime <= MaxTime {
-			Ss += fmt.Sprintf("%v-%d-%s ", op, contract.Gas, stack.Print())
+			//Ss += fmt.Sprintf("%v-%d-%s ", op, contract.Gas, stack.Print())
 			CurrentTime++
 		}
 

@@ -341,6 +341,9 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, scope *ScopeConte
 func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	slot := scope.Stack.peek()
 	slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(slot.Bytes20())))
+	if PrintLog {
+		fmt.Println("opExtCodeSize", common.Address(slot.Bytes20()).String())
+	}
 	return nil, nil
 }
 
@@ -511,7 +514,7 @@ func opSload(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]by
 	loc.SetBytes(val.Bytes())
 
 	if PrintLog && CurrentTime <= MaxTime {
-		Ss += fmt.Sprintf("opSload %s %s %s", scope.Contract.Address().String(), hash.String(), val.String())
+		//Ss += fmt.Sprintf("opSload %s %s %s", scope.Contract.Address().String(), hash.String(), val.String())
 		CurrentTime++
 	}
 
@@ -538,7 +541,7 @@ func opJump(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 func opJumpi(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	pos, cond := scope.Stack.pop(), scope.Stack.pop()
 	if PrintLog && CurrentTime <= MaxTime {
-		fmt.Println("op Jumpi", pos.String(), cond.String())
+		//fmt.Println("op Jumpi", pos.String(), cond.String())
 	}
 
 	if !cond.IsZero() {
