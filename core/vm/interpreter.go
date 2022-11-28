@@ -124,6 +124,9 @@ var (
 )
 
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	if PrintLog {
+		fmt.Println("EVMInterpreter.Run", contract.caller.Address(), contract.Address().String())
+	}
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()
