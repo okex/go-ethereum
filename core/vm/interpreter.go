@@ -121,7 +121,7 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 var (
 	Ss          = ""
 	PrintLog    = false
-	MaxTime     = 1000
+	MaxTime     = 3000
 	CurrentTime = 0
 )
 
