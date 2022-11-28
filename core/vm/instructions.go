@@ -340,9 +340,10 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, scope *ScopeConte
 
 func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	slot := scope.Stack.peek()
+	pre := slot.String()
 	slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(slot.Bytes20())))
 	if PrintLog {
-		fmt.Println("opExtCodeSize", common.Address(slot.Bytes20()).String())
+		fmt.Println("opExtCodeSize", interpreter.evm.depth, pre, common.Address(slot.Bytes20()).String())
 	}
 	return nil, nil
 }
