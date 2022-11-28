@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -509,9 +510,10 @@ func opSload(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]by
 	val := interpreter.evm.StateDB.GetState(scope.Contract.Address(), hash)
 	loc.SetBytes(val.Bytes())
 
-	//if PrintLog {
-	//	Ss += fmt.Sprintf("opSload %s %s %s", scope.Contract.Address().String(), hash.String(), val.String())
-	//}
+	if PrintLog && CurrentTime <= MaxTime {
+		Ss += fmt.Sprintf("opSload %s %s %s", scope.Contract.Address().String(), hash.String(), val.String())
+		CurrentTime++
+	}
 
 	return nil, nil
 }
