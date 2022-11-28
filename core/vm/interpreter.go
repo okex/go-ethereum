@@ -119,16 +119,18 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 // ErrExecutionReverted which means revert-and-keep-gas-left.
 
 var (
-	ss     = ""
-	Height = 0
-	aim    = 15482003
+	ss           = ""
+	Height       = 0
+	aim          = 15482003
+	alreadyPrint = false
 )
 
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
 
 	defer func() {
-		if Height == aim {
+		if Height == aim && !alreadyPrint {
 			fmt.Println("EVMInterpreter.run end", ss)
+			alreadyPrint = true
 		}
 
 	}()
