@@ -92,7 +92,7 @@ func (st *Stack) Print() string {
 	ss := ""
 	if len(st.data) > 0 {
 		for _, val := range st.data {
-			ss += fmt.Sprintf("%v ", val.String())
+			ss += fmt.Sprintf("-%v", val.String())
 		}
 
 	}
