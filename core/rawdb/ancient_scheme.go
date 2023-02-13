@@ -54,9 +54,9 @@ const (
 	trieHistoryTable = "history"
 )
 
-// TrieHistoryFreezerNoSnappy configures whether compression is disabled for the ancient
+// trieHistoryFreezerNoSnappy configures whether compression is disabled for the ancient
 // trie histories
-var TrieHistoryFreezerNoSnappy = map[string]bool{
+var trieHistoryFreezerNoSnappy = map[string]bool{
 	trieHistoryTable: false,
 }
 
@@ -71,5 +71,5 @@ var freezers = []string{chainFreezerName, trieHistoryFreezerName}
 
 // NewTrieHistoryFreezer initializes the freezer for trie histories.
 func NewTrieHistoryFreezer(ancientDir string, readOnly bool) (*ResettableFreezer, error) {
-	return NewResettableFreezer(filepath.Join(ancientDir, trieHistoryFreezerName), "eth/db/triehistory", readOnly, trieHistoryTableSize, TrieHistoryFreezerNoSnappy)
+	return NewResettableFreezer(filepath.Join(ancientDir, trieHistoryFreezerName), "eth/db/triehistory", readOnly, trieHistoryTableSize, trieHistoryFreezerNoSnappy)
 }

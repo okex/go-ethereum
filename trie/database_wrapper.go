@@ -100,18 +100,19 @@ func prepare(diskdb ethdb.Database, config *Config) *Database {
 	}
 }
 
-// NewDatabase initializes the trie database with default settings, namely
-// the legacy hash-based scheme is used by default.
-func NewDatabase(diskdb ethdb.Database) *Database {
-	return NewDatabaseWithConfig(diskdb, nil)
+// NewHashDatabase initializes the trie database with legacy hash-based scheme.
+func NewHashDatabase(diskdb ethdb.Database) *Database {
+	return NewDatabase(diskdb, nil)
 }
 
-// NewDatabaseWithConfig initializes the trie database with provided configs.
-// The path-based scheme is not activated yet, always initialized with legacy
-// hash-based scheme.
-func NewDatabaseWithConfig(diskdb ethdb.Database, config *Config) *Database {
+// NewDatabase initializes the trie database with provided configs.
+func NewDatabase(diskdb ethdb.Database, config *Config) *Database {
 	db := prepare(diskdb, config)
-	db.backend = openHashDatabase(diskdb, db.cleans)
+	if config != nil && config.Snap != nil {
+		db.backend = snap.New(diskdb, db.cleans, config.Snap)
+	} else {
+		db.backend = openHashDatabase(diskdb, db.cleans)
+	}
 	return db
 }
 

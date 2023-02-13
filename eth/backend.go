@@ -131,8 +131,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := pruner.RecoverPruning(stack.ResolvePath(""), chainDb, stack.ResolvePath(config.TrieCleanCacheJournal)); err != nil {
-		log.Error("Failed to recover state", "error", err)
+	// Try to recover offline state pruning only in hash-based.
+	if config.StateScheme == rawdb.HashScheme {
+		if err := pruner.RecoverPruning(stack.ResolvePath(""), chainDb, stack.ResolvePath(config.TrieCleanCacheJournal)); err != nil {
+			log.Error("Failed to recover state", "error", err)
+		}
 	}
 	// Transfer mining-related config to the ethash config.
 	ethashConfig := config.Ethash
@@ -159,7 +162,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		p2pServer:         stack.Server(),
 		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
 	}
-
+	// Ensure the requested state scheme is compatible with stored state data.
+	if err := eth.checkStateCompatibility(); err != nil {
+		return nil, err
+	}
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 	var dbVer = "<nil>"
 	if bcVersion != nil {
@@ -191,6 +197,8 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			TrieTimeLimit:       config.TrieTimeout,
 			SnapshotLimit:       config.SnapshotCache,
 			Preimages:           config.Preimages,
+			StateHistory:        config.StateHistory,
+			NodeScheme:          config.StateScheme,
 		}
 	)
 	// Override the chain config with provided settings.
@@ -437,7 +445,7 @@ func (s *Ethereum) StartMining(threads int) error {
 		}
 		// If mining is started, we can disable the transaction rejection mechanism
 		// introduced to speed sync times.
-		atomic.StoreUint32(&s.handler.acceptTxs, 1)
+		s.handler.setSynced()
 
 		go s.miner.Start()
 	}
@@ -470,7 +478,7 @@ func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening
 func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
 func (s *Ethereum) Synced() bool                       { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
-func (s *Ethereum) SetSynced()                         { atomic.StoreUint32(&s.handler.acceptTxs, 1) }
+func (s *Ethereum) SetSynced()                         { s.handler.setSynced() }
 func (s *Ethereum) ArchiveMode() bool                  { return s.config.NoPruning }
 func (s *Ethereum) BloomIndexer() *core.ChainIndexer   { return s.bloomIndexer }
 func (s *Ethereum) Merger() *consensus.Merger          { return s.merger }
@@ -536,4 +544,35 @@ func (s *Ethereum) Stop() error {
 	s.eventMux.Stop()
 
 	return nil
+}
+
+// checkStateCompatibility ensures the requested state scheme is compatible with
+// stored state data.
+func (s *Ethereum) checkStateCompatibility() error {
+	switch s.config.StateScheme {
+	case rawdb.PathScheme:
+		// Check whether the root node of the genesis state exists in
+		// the local database under the hash-based scheme. There may
+		// be special cases where the genesis state is empty, but it's
+		// not considered since it's impossible in ethereum proof-of-
+		// stake world.
+		header := rawdb.ReadHeader(s.chainDb, rawdb.ReadCanonicalHash(s.chainDb, 0), 0)
+		if header == nil {
+			return nil
+		}
+		blob := rawdb.ReadLegacyTrieNode(s.chainDb, header.Root)
+		if len(blob) == 0 {
+			return nil
+		}
+		return errors.New("incompatible state scheme, stored: hash, expect: path")
+	default:
+		// Check whether the root node of the state trie exists in the
+		// local database under the path-based scheme. Dangling trie
+		// nodes are not checked since they are unusable at all.
+		blob, _ := rawdb.ReadAccountTrieNode(s.chainDb, nil)
+		if len(blob) == 0 {
+			return nil
+		}
+		return errors.New("incompatible state scheme, stored: path, expect: hash")
+	}
 }
