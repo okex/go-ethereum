@@ -525,6 +525,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	// in the following procedure that all nodes are hashed.
 	rootHash := t.Hash()
 	h := newCommitter()
+	h.saveNode = map[string][]byte{}
 	defer returnCommitterToPool(h)
 
 	// Do a quick check if we really need to commit, before we spin
