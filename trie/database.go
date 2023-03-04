@@ -376,6 +376,7 @@ func (db *Database) node(hash common.Hash) node {
 	// Retrieve the node from the clean cache if available
 	if db.cleans != nil {
 		if enc := db.cleans.Get(nil, hash[:]); enc != nil {
+			db.statistics.addCacheReadCount()
 			memcacheCleanHitMeter.Mark(1)
 			memcacheCleanReadMeter.Mark(int64(len(enc)))
 			return mustDecodeNode(hash[:], enc)
@@ -387,6 +388,7 @@ func (db *Database) node(hash common.Hash) node {
 	db.lock.RUnlock()
 
 	if dirty != nil {
+		db.statistics.addCacheReadCount()
 		memcacheDirtyHitMeter.Mark(1)
 		memcacheDirtyReadMeter.Mark(int64(dirty.size))
 		return dirty.obj(hash)
@@ -417,6 +419,7 @@ func (db *Database) Node(hash common.Hash) ([]byte, error) {
 	// Retrieve the node from the clean cache if available
 	if db.cleans != nil {
 		if enc := db.cleans.Get(nil, hash[:]); enc != nil {
+			db.statistics.addCacheReadCount()
 			memcacheCleanHitMeter.Mark(1)
 			memcacheCleanReadMeter.Mark(int64(len(enc)))
 			return enc, nil
@@ -428,6 +431,7 @@ func (db *Database) Node(hash common.Hash) ([]byte, error) {
 	db.lock.RUnlock()
 
 	if dirty != nil {
+		db.statistics.addCacheReadCount()
 		memcacheDirtyHitMeter.Mark(1)
 		memcacheDirtyReadMeter.Mark(int64(dirty.size))
 		return dirty.rlp(), nil
