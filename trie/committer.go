@@ -76,6 +76,12 @@ func returnCommitterToPool(h *committer) {
 	committerPool.Put(h)
 }
 
+func (c *committer) SetDelta(delta *MptDelta) {
+	for _, d := range delta.nodeDelta {
+		c.saveNode[d.Key] = d.Val
+	}
+}
+
 // commit collapses a node down into a hash node and inserts it into the database
 func (c *committer) Commit(n node, db *Database) (hashNode, error) {
 	if db == nil {
@@ -83,8 +89,7 @@ func (c *committer) Commit(n node, db *Database) (hashNode, error) {
 	}
 	var h node
 	var err error
-	// todo flag delta
-	if true && len(c.saveNode) > 0 {
+	if len(c.saveNode) > 0 {
 		rootHash := c.saveNode["root"]
 		err = c.commitWithDelta(rootHash, db)
 	} else {

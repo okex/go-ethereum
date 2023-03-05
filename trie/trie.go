@@ -71,6 +71,15 @@ func (t *Trie) newFlag() nodeFlag {
 	return nodeFlag{dirty: true}
 }
 
+type NodeDelta struct {
+	Key string `json:"key"`
+	Val []byte `json:"val"`
+}
+
+type MptDelta struct {
+	nodeDelta []NodeDelta `json:"node_delta"`
+}
+
 // New creates a trie with an existing root node from db.
 //
 // If root is the zero hash or the sha3 hash of an empty string, the
@@ -512,6 +521,23 @@ func (t *Trie) Hash() common.Hash {
 	return common.BytesToHash(hash.(hashNode))
 }
 
+func (t *Trie) CommitWithDelta(inputDelta *MptDelta, onleaf LeafCallback) (root common.Hash, err error) {
+	if t.db == nil {
+		panic("commit called on trie with nil database")
+	}
+	if t.root == nil {
+		return emptyRoot, nil
+	}
+	// Derive the hash for all dirty nodes first. We hold the assumption
+	// in the following procedure that all nodes are hashed.
+	h := newCommitter()
+	h.saveNode = map[string][]byte{}
+	h.SetDelta(inputDelta)
+	defer returnCommitterToPool(h)
+
+	return t.doCommit(onleaf, h)
+}
+
 // Commit writes all nodes to the trie's memory database, tracking the internal
 // and external (for account tries) references.
 func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
@@ -523,11 +549,15 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	}
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
-	rootHash := t.Hash()
 	h := newCommitter()
 	h.saveNode = map[string][]byte{}
 	defer returnCommitterToPool(h)
 
+	return t.doCommit(onleaf, h)
+}
+
+func (t *Trie) doCommit(onleaf LeafCallback, h *committer) (root common.Hash, err error) {
+	rootHash := t.Hash()
 	// Do a quick check if we really need to commit, before we spin
 	// up goroutines. This can happen e.g. if we load a trie for reading storage
 	// values, but don't write to it.
