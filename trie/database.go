@@ -91,6 +91,7 @@ type Database struct {
 	lock        sync.RWMutex
 	statistics  *RuntimeState // The runtime statistics
 	acProcessor *ACProcessor
+	enableAC    bool
 }
 
 // rawNode is a simple binary blob used to differentiate between collapsed trie
@@ -708,10 +709,19 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// memory cache during commit but not yet in persistent storage). This is ensured
 	// by only uncaching existing data when the database write finalizes.
 	start := time.Now()
-	batch := db.diskdb.NewBatch()
+
+	var batch ethdb.Batch
+	if db.enableAC {
+		batch = NewBatchEx(db.acProcessor.kvdatas)
+	} else {
+		batch = db.diskdb.NewBatch()
+	}
 
 	// Move all of the accumulated preimages into a write batch
 	if db.preimages != nil {
+		if db.enableAC {
+			db.acProcessor.cache.SetPreimages(db.preimages)
+		}
 		rawdb.WritePreimages(batch, db.preimages)
 		// Since we're going to replay trie node writes into the clean cache, flush out
 		// any batched pre-images before continuing.
@@ -777,6 +787,9 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	})
 	if err != nil {
 		return err
+	}
+	if db.enableAC {
+		db.acProcessor.cache.SetDirty(hash, node)
 	}
 	// If we've reached an optimal batch size, commit and start over
 	rawdb.WriteTrieNode(batch, hash, node.rlp())
