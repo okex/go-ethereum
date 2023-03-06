@@ -37,8 +37,8 @@ func (ac *ACProcessor) Close() {
 }
 
 func (ac *ACProcessor) ACCommit() {
-	batch := ac.diskdb.NewBatch()
 	for kvs := range ac.kvdatas {
+		batch := ac.diskdb.NewBatch()
 		for _, kv := range kvs {
 			if kv.delete {
 				batch.Delete(kv.key)

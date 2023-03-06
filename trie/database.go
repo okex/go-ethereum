@@ -398,6 +398,11 @@ func (db *Database) node(hash common.Hash) node {
 	}
 	memcacheDirtyMissMeter.Mark(1)
 
+	if db.enableAC {
+		if n, ok := db.acProcessor.cache.GetDirty(hash); ok {
+			return n.obj(hash)
+		}
+	}
 	// Content unavailable in memory, attempt to retrieve from disk
 	enc, err := db.diskdb.Get(hash[:])
 	if err != nil || enc == nil {
@@ -441,6 +446,12 @@ func (db *Database) Node(hash common.Hash) ([]byte, error) {
 	}
 	memcacheDirtyMissMeter.Mark(1)
 
+	if db.enableAC {
+		if n, ok := db.acProcessor.cache.GetDirty(hash); ok {
+			return n.rlp(), nil
+		}
+	}
+
 	// Content unavailable in memory, attempt to retrieve from disk
 	enc := rawdb.ReadTrieNode(db.diskdb, hash)
 	if len(enc) != 0 {
@@ -468,6 +479,11 @@ func (db *Database) preimage(hash common.Hash) []byte {
 
 	if preimage != nil {
 		return preimage
+	}
+	if db.enableAC {
+		if v, ok := db.acProcessor.cache.GetPreimage(hash); ok {
+			return v
+		}
 	}
 	return rawdb.ReadPreimage(db.diskdb, hash)
 }
