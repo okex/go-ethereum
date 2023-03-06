@@ -132,6 +132,13 @@ func (t *odrTrie) Commit(onleaf trie.LeafCallback) (common.Hash, error) {
 	return t.trie.Commit(onleaf)
 }
 
+func (t *odrTrie) CommitForDelta(onleaf trie.LeafCallback) (root common.Hash, delta *trie.MptDelta, err error) {
+	if t.trie == nil {
+		return t.id.Root, nil, nil
+	}
+	return t.trie.CommitForDelta(onleaf)
+}
+
 func (t *odrTrie) CommitWithDelta(inputDelta *trie.MptDelta, onleaf trie.LeafCallback) (common.Hash, error) {
 	if t.trie == nil {
 		return t.id.Root, nil

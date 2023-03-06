@@ -139,39 +139,38 @@ func (t *SecureTrie) GetKey(shaKey []byte) []byte {
 	return t.trie.db.preimage(common.BytesToHash(shaKey))
 }
 
+func (t *SecureTrie) preCommit() {
+	// Write all the pre-images to the actual disk database
+	if len(t.getSecKeyCache()) > 0 {
+		if t.trie.db.preimages != nil { // Ugly direct check but avoids the below write lock
+			t.trie.db.lock.Lock()
+			for hk, key := range t.secKeyCache {
+				t.trie.db.insertPreimage(common.BytesToHash([]byte(hk)), key)
+			}
+			t.trie.db.lock.Unlock()
+		}
+		t.secKeyCache = make(map[string][]byte)
+	}
+}
+
 // Commit writes all nodes and the secure hash pre-images to the trie's database.
 // Nodes are stored with their sha3 hash as the key.
 //
 // Committing flushes nodes from memory. Subsequent Get calls will load nodes
 // from the database.
 func (t *SecureTrie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
-	// Write all the pre-images to the actual disk database
-	if len(t.getSecKeyCache()) > 0 {
-		if t.trie.db.preimages != nil { // Ugly direct check but avoids the below write lock
-			t.trie.db.lock.Lock()
-			for hk, key := range t.secKeyCache {
-				t.trie.db.insertPreimage(common.BytesToHash([]byte(hk)), key)
-			}
-			t.trie.db.lock.Unlock()
-		}
-		t.secKeyCache = make(map[string][]byte)
-	}
+	t.preCommit()
 	// Commit the trie to its intermediate node database
 	return t.trie.Commit(onleaf)
 }
 
+func (t *SecureTrie) CommitForDelta(onleaf LeafCallback) (root common.Hash, delta *MptDelta, err error) {
+	t.preCommit()
+	return t.trie.CommitForDelta(onleaf)
+}
+
 func (t *SecureTrie) CommitWithDelta(inputDelta *MptDelta, onleaf LeafCallback) (root common.Hash, err error) {
-	// Write all the pre-images to the actual disk database
-	if len(t.getSecKeyCache()) > 0 {
-		if t.trie.db.preimages != nil { // Ugly direct check but avoids the below write lock
-			t.trie.db.lock.Lock()
-			for hk, key := range t.secKeyCache {
-				t.trie.db.insertPreimage(common.BytesToHash([]byte(hk)), key)
-			}
-			t.trie.db.lock.Unlock()
-		}
-		t.secKeyCache = make(map[string][]byte)
-	}
+	t.preCommit()
 	// Commit the trie to its intermediate node database
 	return t.trie.CommitWithDelta(inputDelta, onleaf)
 }

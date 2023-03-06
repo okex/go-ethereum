@@ -87,6 +87,7 @@ type Trie interface {
 	// Commit writes all nodes to the trie's memory database, tracking the internal
 	// and external (for account tries) references.
 	Commit(onleaf trie.LeafCallback) (common.Hash, error)
+	CommitForDelta(onleaf trie.LeafCallback) (root common.Hash, delta *trie.MptDelta, err error)
 	CommitWithDelta(inputDelta *trie.MptDelta, onleaf trie.LeafCallback) (common.Hash, error)
 
 	// NodeIterator returns an iterator that returns nodes of the trie. Iteration

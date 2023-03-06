@@ -535,6 +535,23 @@ func (t *Trie) CommitWithDelta(inputDelta *MptDelta, onleaf LeafCallback) (root 
 	h.SetDelta(inputDelta)
 	defer returnCommitterToPool(h)
 
+	root, _, err = t.doCommit(onleaf, h)
+	return
+}
+
+func (t *Trie) CommitForDelta(onleaf LeafCallback) (root common.Hash, delta *MptDelta, err error) {
+	if t.db == nil {
+		panic("commit called on trie with nil database")
+	}
+	if t.root == nil {
+		return emptyRoot, nil, nil
+	}
+	// Derive the hash for all dirty nodes first. We hold the assumption
+	// in the following procedure that all nodes are hashed.
+	h := newCommitter()
+	h.saveNode = map[string][]byte{}
+	defer returnCommitterToPool(h)
+
 	return t.doCommit(onleaf, h)
 }
 
@@ -553,16 +570,17 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	h.saveNode = map[string][]byte{}
 	defer returnCommitterToPool(h)
 
-	return t.doCommit(onleaf, h)
+	root, _, err = t.doCommit(onleaf, h)
+	return
 }
 
-func (t *Trie) doCommit(onleaf LeafCallback, h *committer) (root common.Hash, err error) {
+func (t *Trie) doCommit(onleaf LeafCallback, h *committer) (root common.Hash, delta *MptDelta, err error) {
 	rootHash := t.Hash()
 	// Do a quick check if we really need to commit, before we spin
 	// up goroutines. This can happen e.g. if we load a trie for reading storage
 	// values, but don't write to it.
 	if _, dirty := t.root.cache(); !dirty {
-		return rootHash, nil
+		return rootHash, nil, nil
 	}
 	var wg sync.WaitGroup
 	if onleaf != nil {
@@ -585,10 +603,11 @@ func (t *Trie) doCommit(onleaf LeafCallback, h *committer) (root common.Hash, er
 		wg.Wait()
 	}
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash{}, nil, err
 	}
+	delta = h.GetDelta()
 	t.root = newRoot
-	return rootHash, nil
+	return rootHash, delta, nil
 }
 
 // hashRoot calculates the root hash of the given trie

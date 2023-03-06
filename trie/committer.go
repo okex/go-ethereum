@@ -82,6 +82,14 @@ func (c *committer) SetDelta(delta *MptDelta) {
 	}
 }
 
+func (c *committer) GetDelta() *MptDelta {
+	delta := make([]NodeDelta, 0, len(c.saveNode))
+	for k, v := range c.saveNode {
+		delta = append(delta, NodeDelta{k, v})
+	}
+	return &MptDelta{nodeDelta: delta}
+}
+
 // commit collapses a node down into a hash node and inserts it into the database
 func (c *committer) Commit(n node, db *Database) (hashNode, error) {
 	if db == nil {
