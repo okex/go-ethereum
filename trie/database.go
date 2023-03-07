@@ -280,6 +280,7 @@ type Config struct {
 	Cache     int    // Memory allowance (MB) to use for caching trie nodes in memory
 	Journal   string // Journal of clean cache to survive node restarts
 	Preimages bool   // Flag whether the preimage of trie key is recorded
+	EnableAC  bool   // enable async commit
 }
 
 // NewDatabase creates a new trie database to store ephemeral trie content before
@@ -307,8 +308,10 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 		dirties: map[common.Hash]*cachedNode{{}: {
 			children: make(map[common.Hash]uint16),
 		}},
-		statistics:  NewRuntimeState(),
-		acProcessor: NewACProcessor(diskdb),
+		statistics: NewRuntimeState(),
+	}
+	if config != nil && config.EnableAC {
+		db.acProcessor = NewACProcessor(diskdb)
 	}
 	if config == nil || config.Preimages { // TODO(karalabe): Flip to default off in the future
 		db.preimages = make(map[common.Hash][]byte)
@@ -398,8 +401,11 @@ func (db *Database) node(hash common.Hash) node {
 	}
 	memcacheDirtyMissMeter.Mark(1)
 
-	if db.enableAC {
-		if n, ok := db.acProcessor.cache.GetDirty(hash); ok {
+	if db.acProcessor != nil {
+		if n, ok := db.acProcessor.GetDirty(hash); ok {
+			if db.cleans != nil {
+				db.cleans.Set(hash[:], n.rlp())
+			}
 			return n.obj(hash)
 		}
 	}
@@ -446,9 +452,13 @@ func (db *Database) Node(hash common.Hash) ([]byte, error) {
 	}
 	memcacheDirtyMissMeter.Mark(1)
 
-	if db.enableAC {
-		if n, ok := db.acProcessor.cache.GetDirty(hash); ok {
-			return n.rlp(), nil
+	if db.acProcessor != nil {
+		if n, ok := db.acProcessor.GetDirty(hash); ok {
+			enc := n.rlp()
+			if db.cleans != nil {
+				db.cleans.Set(hash[:], enc)
+			}
+			return enc, nil
 		}
 	}
 
@@ -480,8 +490,8 @@ func (db *Database) preimage(hash common.Hash) []byte {
 	if preimage != nil {
 		return preimage
 	}
-	if db.enableAC {
-		if v, ok := db.acProcessor.cache.GetPreimage(hash); ok {
+	if db.acProcessor != nil {
+		if v, ok := db.acProcessor.GetPreimage(hash); ok {
 			return v
 		}
 	}
@@ -727,7 +737,7 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	start := time.Now()
 
 	var batch ethdb.Batch
-	if db.enableAC {
+	if db.acProcessor != nil {
 		batch = NewBatchEx(db.acProcessor.kvdatas)
 	} else {
 		batch = db.diskdb.NewBatch()
@@ -735,8 +745,8 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 
 	// Move all of the accumulated preimages into a write batch
 	if db.preimages != nil {
-		if db.enableAC {
-			db.acProcessor.cache.SetPreimages(db.preimages)
+		if db.acProcessor != nil {
+			db.acProcessor.SetPreimages(db.preimages)
 		}
 		rawdb.WritePreimages(batch, db.preimages)
 		// Since we're going to replay trie node writes into the clean cache, flush out
@@ -804,8 +814,8 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	if err != nil {
 		return err
 	}
-	if db.enableAC {
-		db.acProcessor.cache.SetDirty(hash, node)
+	if db.acProcessor != nil {
+		db.acProcessor.SetDirty(hash, node)
 	}
 	// If we've reached an optimal batch size, commit and start over
 	rawdb.WriteTrieNode(batch, hash, node.rlp())

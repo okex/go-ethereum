@@ -51,6 +51,22 @@ func (ac *ACProcessor) ACCommit() {
 	}
 }
 
+func (ac *ACProcessor) GetDirty(key common.Hash) (*cachedNode, bool) {
+	return ac.cache.GetDirty(key)
+}
+
+func (ac *ACProcessor) GetPreimage(key common.Hash) ([]byte, bool) {
+	return ac.cache.GetPreimage(key)
+}
+
+func (ac *ACProcessor) SetDirty(key common.Hash, node *cachedNode) {
+	ac.cache.SetDirty(key, node)
+}
+
+func (ac *ACProcessor) SetPreimages(images map[common.Hash][]byte) {
+	ac.cache.SetPreimages(images)
+}
+
 type Cache struct {
 	dirties   map[common.Hash]*cachedNode
 	preimages map[common.Hash][]byte
@@ -164,176 +180,8 @@ func (b *BatchEx) Replay(w ethdb.KeyValueWriter) error {
 	return nil
 }
 
-func (db *Database) EnableAsyncCommit(enable bool) {
-	db.enableAC = enable
+func (db *Database) Close() {
+	if db.acProcessor != nil {
+		db.acProcessor.Close()
+	}
 }
-
-//func (db *Database) AsyncCommitV8(node common.Hash, report bool, callback func(common.Hash)) error {
-//	// Create a database batch to flush persistent data out. It is important that
-//	// outside code doesn't see an inconsistent state (referenced data removed from
-//	// memory cache during commit but not yet in persistent storage). This is ensured
-//	// by only uncaching existing data when the database write finalizes.
-//	start := time.Now()
-//	batch := NewBatchEx(db.acProcessor.kvdatas)
-//
-//	// Move all of the accumulated preimages into a write batch
-//	if db.preimages != nil {
-//		rawdb.WritePreimages(batch, db.preimages)
-//		// Since we're going to replay trie node writes into the clean cache, flush out
-//		// any batched pre-images before continuing.
-//		if err := batch.Write(); err != nil {
-//			return err
-//		}
-//		batch.Reset()
-//		db.acProcessor.cache.SetPreimages(db.preimages)
-//	}
-//	// Move the trie itself into the batch, flushing if enough data is accumulated
-//	nodes, storage := len(db.dirties), db.dirtiesSize
-//
-//	uncacher := &cleaner{db}
-//	if err := db.asyncCommit(node, batch, uncacher, callback); err != nil {
-//		log.Error("Failed to commit trie from trie database", "err", err)
-//		return err
-//	}
-//	// Trie mostly committed to disk, flush any batch leftovers
-//	if err := batch.Write(); err != nil {
-//		log.Error("Failed to write trie to disk", "err", err)
-//		return err
-//	}
-//	// Uncache any leftovers in the last batch
-//	db.lock.Lock()
-//	defer db.lock.Unlock()
-//
-//	batch.Replay(uncacher)
-//	batch.Reset()
-//
-//	// Reset the storage counters and bumped metrics
-//	if db.preimages != nil {
-//		db.preimages, db.preimagesSize = make(map[common.Hash][]byte), 0
-//	}
-//	memcacheCommitTimeTimer.Update(time.Since(start))
-//	memcacheCommitSizeMeter.Mark(int64(storage - db.dirtiesSize))
-//	memcacheCommitNodesMeter.Mark(int64(nodes - len(db.dirties)))
-//
-//	logger := log.Info
-//	if !report {
-//		logger = log.Debug
-//	}
-//	logger("Persisted trie from memory database", "nodes", nodes-len(db.dirties)+int(db.flushnodes), "size", storage-db.dirtiesSize+db.flushsize, "time", time.Since(start)+db.flushtime,
-//		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
-//
-//	// Reset the garbage collection statistics
-//	db.gcnodes, db.gcsize, db.gctime = 0, 0, 0
-//	db.flushnodes, db.flushsize, db.flushtime = 0, 0, 0
-//
-//	return nil
-//}
-//
-//// commit is the private locked version of Commit.
-//func (db *Database) asyncCommit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner, callback func(common.Hash)) error {
-//	// If the node does not exist, it's a previously committed node
-//	node, ok := db.dirties[hash]
-//	if !ok {
-//		return nil
-//	}
-//	var err error
-//	node.forChilds(func(child common.Hash) {
-//		if err == nil {
-//			err = db.asyncCommit(child, batch, uncacher, callback)
-//		}
-//	})
-//	if err != nil {
-//		return err
-//	}
-//	// If we've reached an optimal batch size, commit and start over
-//	db.acProcessor.cache.SetDirty(hash, node)
-//	rawdb.WriteTrieNode(batch, hash, node.rlp())
-//	if callback != nil {
-//		callback(hash)
-//	}
-//	if batch.ValueSize() >= ethdb.IdealBatchSize {
-//		if err := batch.Write(); err != nil {
-//			return err
-//		}
-//		db.lock.Lock()
-//		batch.Replay(uncacher)
-//		batch.Reset()
-//		db.lock.Unlock()
-//	}
-//	return nil
-//}
-
-// AsyncCommit iterates over all the children of a particular node, writes them out
-// to disk, forcefully tearing down all references in both directions. As a side
-// effect, all pre-images accumulated up to this point are also written.
-//
-// Note, this method is a non-synchronized mutator. It is unsafe to call this
-// concurrently with other mutators.
-//func (db *Database) AsyncCommitV25(node common.Hash, report bool, callback func(common.Hash)) error {
-//	// Create a database batch to flush persistent data out. It is important that
-//	// outside code doesn't see an inconsistent state (referenced data removed from
-//	// memory cache during commit but not yet in persistent storage). This is ensured
-//	// by only uncaching existing data when the database write finalizes.
-//	start := time.Now()
-//	batch := NewBatchEx(db.acProcessor.kvdatas)
-//
-//	// Move all of the accumulated preimages into a write batch
-//	if db.preimages != nil {
-//		db.preimages.asyncCommit(true, db)
-//	}
-//	// Move the trie itself into the batch, flushing if enough data is accumulated
-//	nodes, storage := len(db.dirties), db.dirtiesSize
-//
-//	uncacher := &cleaner{db}
-//	if err := db.asyncCommit(node, batch, uncacher, callback); err != nil {
-//		log.Error("Failed to commit trie from trie database", "err", err)
-//		return err
-//	}
-//	// Trie mostly committed to disk, flush any batch leftovers
-//	if err := batch.Write(); err != nil {
-//		log.Error("Failed to write trie to disk", "err", err)
-//		return err
-//	}
-//	// Uncache any leftovers in the last batch
-//	db.lock.Lock()
-//	defer db.lock.Unlock()
-//
-//	batch.Replay(uncacher)
-//	batch.Reset()
-//
-//	// Reset the storage counters and bumped metrics
-//	memcacheCommitTimeTimer.Update(time.Since(start))
-//	memcacheCommitSizeMeter.Mark(int64(storage - db.dirtiesSize))
-//	memcacheCommitNodesMeter.Mark(int64(nodes - len(db.dirties)))
-//
-//	logger := log.Info
-//	if !report {
-//		logger = log.Debug
-//	}
-//	logger("Persisted trie from memory database", "nodes", nodes-len(db.dirties)+int(db.flushnodes), "size", storage-db.dirtiesSize+db.flushsize, "time", time.Since(start)+db.flushtime,
-//		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
-//
-//	// Reset the garbage collection statistics
-//	db.gcnodes, db.gcsize, db.gctime = 0, 0, 0
-//	db.flushnodes, db.flushsize, db.flushtime = 0, 0, 0
-//
-//	return nil
-//}
-
-//// commit flushes the cached preimages into the disk.
-//func (store *preimageStore) asyncCommit(force bool, db *Database) error {
-//	store.lock.Lock()
-//	defer store.lock.Unlock()
-//
-//	if store.preimagesSize <= 4*1024*1024 && !force {
-//		return nil
-//	}
-//	batch := NewBatchEx(db.acProcessor.kvdatas)
-//	rawdb.WritePreimages(batch, store.preimages)
-//	if err := batch.Write(); err != nil {
-//		return err
-//	}
-//	db.acProcessor.cache.SetPreimages(store.preimages)
-//	store.preimages, store.preimagesSize = make(map[common.Hash][]byte), 0
-//	return nil
-//}
