@@ -125,3 +125,33 @@ func TestACProcessor(t *testing.T) {
 		}
 	}
 }
+
+func TestACIterator(t *testing.T) {
+	triedb := NewDatabaseWithConfig(memorydb.New(), &Config{
+		Preimages: true,
+		EnableAC:  true,
+	})
+	ctr, _ := New(common.Hash{}, triedb)
+	for _, val := range testdata1 {
+		ctr.Update([]byte(val.k), []byte(val.v))
+	}
+	root, _ := ctr.Commit(nil)
+
+	triedb.Commit(root, true, nil)
+
+	trie, err := New(root, triedb)
+	assert.NoError(t, err)
+
+	// should stop the ACCommit() for test
+	found := make(map[string]string)
+	it := NewIterator(trie.NodeIterator(nil))
+	for it.Next() {
+		found[string(it.Key)] = string(it.Value)
+	}
+
+	for _, kv := range testdata1 {
+		if found[kv.k] != kv.v {
+			t.Errorf("iterator value mismatch for %s: got %q want %q", kv.k, found[kv.v], kv.v)
+		}
+	}
+}
