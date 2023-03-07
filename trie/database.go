@@ -91,7 +91,6 @@ type Database struct {
 	lock        sync.RWMutex
 	statistics  *RuntimeState // The runtime statistics
 	acProcessor *ACProcessor
-	enableAC    bool
 }
 
 // rawNode is a simple binary blob used to differentiate between collapsed trie
