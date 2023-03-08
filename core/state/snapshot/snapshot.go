@@ -163,6 +163,7 @@ type Tree struct {
 	cache  int                      // Megabytes permitted to use for read caches
 	layers map[common.Hash]snapshot // Collection of all known layers
 	lock   sync.RWMutex
+	Retriever
 }
 
 // New attempts to load an already existing snapshot from a persistent key-value
@@ -718,7 +719,8 @@ func (t *Tree) Rebuild(root common.Hash) {
 	// generator will run a wiper first if there's not one running right now.
 	log.Info("Rebuilding state snapshot")
 	t.layers = map[common.Hash]snapshot{
-		root: generateSnapshot(t.diskdb, t.triedb, t.cache, root),
+		// root: generateSnapshot(t.diskdb, t.triedb, t.cache, root),
+		root: generateSnapshotCustom(t.diskdb, t.triedb, t.cache, root, t.Retriever),
 	}
 }
 
