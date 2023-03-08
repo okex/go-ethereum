@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	batchChanLen = 100
+	batchChanLen = 100000
 )
 
 type keyvalue struct {
