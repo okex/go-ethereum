@@ -1,6 +1,7 @@
 package trie
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"sync"
@@ -46,6 +47,7 @@ func (ac *ACProcessor) ACCommit() {
 				batch.Put(kv.key, kv.value)
 			}
 		}
+		fmt.Println("ACCommit ac chan remain", len(ac.kvdatas), "batch value size", batch.ValueSize())
 		batch.Write()
 		ac.cache.Clear(kvs)
 	}
