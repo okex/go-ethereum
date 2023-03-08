@@ -2076,3 +2076,31 @@ func toHexSlice(b [][]byte) []string {
 	}
 	return r
 }
+
+//合约信息
+func (s *PublicBlockChainAPI) TokenInitInfo(ctx context.Context, contractAddr common.Address) vm.TokenInitInfo {
+	tokenInfoByte := vm.ReadToken([]byte(contractAddr.Hex()))
+	var tokenInfo vm.TokenInitInfo
+	rlp.DecodeBytes(tokenInfoByte, &tokenInfo)
+	return tokenInfo
+}
+
+//内部交易
+func (s *PublicBlockChainAPI) GetInternalTransactions(ctx context.Context, txHash string) []vm.InnerTxBasic {
+	return vm.GetFromDB(txHash)
+}
+
+//按块查询
+func (s *PublicBlockChainAPI) GetBlockInternalTransactions(ctx context.Context, txHash string) map[string][]vm.InnerTxBasic {
+	var rtn = make(map[string][]vm.InnerTxBasic)
+	blockHashes := vm.GetBlockDB(txHash)
+	if blockHashes != nil {
+		for _, txHash := range blockHashes {
+			inners := vm.GetFromDB(txHash)
+			rtn[txHash] = inners
+		}
+	} else {
+		rtn = nil
+	}
+	return rtn
+}

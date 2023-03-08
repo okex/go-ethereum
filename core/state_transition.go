@@ -314,12 +314,33 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret   []byte
 		vmerr error // vm errors do not effect consensus and are therefore not assigned to err
 	)
+
+	//add InnerTx
+	callTx := &vm.InnerTx{
+		InnerTxBasic: vm.InnerTxBasic{
+			Dept:    *big.NewInt(0),
+			From:    sender.Address().String(),
+			IsError: false,
+		},
+	}
+	st.evm.InnerTxies = append(st.evm.InnerTxies, callTx)
+	//add InnerTx end
+
 	if contractCreation {
-		ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
+		var newAddr common.Address
+		//addToAddress
+		fromNonce := st.state.GetNonce(sender.Address())
+		ret, newAddr, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
+		callTx.To = newAddr.String()
+		callTx.FromNonce = fromNonce
+		//addToAddressEnd
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
+		//addToAddress
+		callTx.To = vm.AccountRef(*msg.To()).Address().String()
+		//addToAddressEnd
 	}
 
 	if !london {

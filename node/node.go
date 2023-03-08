@@ -28,6 +28,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -178,6 +179,13 @@ func (n *Node) Start() error {
 		n.doClose(nil)
 		return err
 	}
+	//初始化内部交易数据库
+	err = vm.InitDB(n.config.DataDir, vm.DefaultCreator())
+	if err != nil {
+		n.doClose(nil)
+		return err
+	}
+	//初始化内部交易数据库 end
 	// Start all registered lifecycles.
 	var started []Lifecycle
 	for _, lifecycle := range lifecycles {
@@ -227,6 +235,9 @@ func (n *Node) doClose(errs []error) error {
 	// synchronize with OpenDatabase*.
 	n.lock.Lock()
 	n.state = closedState
+	//关闭内部交易数据库
+	errs = append(errs, vm.CloseDB()...)
+	//关闭内部交易数据库 end
 	errs = append(errs, n.closeDatabases()...)
 	n.lock.Unlock()
 
