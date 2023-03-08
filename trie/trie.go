@@ -71,15 +71,6 @@ func (t *Trie) newFlag() nodeFlag {
 	return nodeFlag{dirty: true}
 }
 
-type NodeDelta struct {
-	Key string `json:"key"`
-	Val []byte `json:"val"`
-}
-
-type MptDelta struct {
-	nodeDelta []NodeDelta `json:"node_delta"`
-}
-
 // New creates a trie with an existing root node from db.
 //
 // If root is the zero hash or the sha3 hash of an empty string, the

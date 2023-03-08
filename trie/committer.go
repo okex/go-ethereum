@@ -77,17 +77,17 @@ func returnCommitterToPool(h *committer) {
 }
 
 func (c *committer) SetDelta(delta *MptDelta) {
-	for _, d := range delta.nodeDelta {
+	for _, d := range delta.NodeDelta {
 		c.saveNode[d.Key] = d.Val
 	}
 }
 
 func (c *committer) GetDelta() *MptDelta {
-	delta := make([]NodeDelta, 0, len(c.saveNode))
+	delta := make([]*NodeDelta, 0, len(c.saveNode))
 	for k, v := range c.saveNode {
-		delta = append(delta, NodeDelta{k, v})
+		delta = append(delta, &NodeDelta{k, v})
 	}
-	return &MptDelta{nodeDelta: delta}
+	return &MptDelta{NodeDelta: delta}
 }
 
 // commit collapses a node down into a hash node and inserts it into the database
