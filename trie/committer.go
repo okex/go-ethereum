@@ -99,7 +99,7 @@ func (c *committer) Commit(n node, db *Database) (hashNode, error) {
 	var err error
 	if len(c.saveNode) > 0 {
 		rootHash := c.saveNode["root"]
-		err = c.commitWithDelta(rootHash, db)
+		h, err = c.commitWithDelta(rootHash, db)
 	} else {
 		switch cn := n.(type) {
 		case *shortNode:
@@ -120,7 +120,7 @@ func (c *committer) Commit(n node, db *Database) (hashNode, error) {
 	return h.(hashNode), nil
 }
 
-func (c *committer) commitWithDelta(nodeHash []byte, db *Database) error {
+func (c *committer) commitWithDelta(nodeHash []byte, db *Database) (node, error) {
 	n := mustDecodeNode(nodeHash, c.saveNode[string(nodeHash)])
 	// Commit children, then parent, and remove remove the dirty flag.
 	switch cn := n.(type) {
@@ -128,23 +128,30 @@ func (c *committer) commitWithDelta(nodeHash []byte, db *Database) error {
 		// If the child is fullnode, recursively commit.
 		// Otherwise it can only be hashNode or valueNode.
 		if h, ok := cn.Val.(*hashNode); ok {
-			err := c.commitWithDelta(*h, db)
+			_, err := c.commitWithDelta(*h, db)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		// The key needs to be copied, since we're delivering it to database
-		_ = c.store(cn, db)
-		return nil
+		hashedNode := c.store(cn, db)
+		if hn, ok := hashedNode.(hashNode); ok {
+			return hn, nil
+		}
+		return cn, nil
 	case *fullNode:
 		err := c.commitChildrenWithDelta(cn, db)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		_ = c.store(cn, db)
-		return nil
+		hashedNode := c.store(cn, db)
+		if hn, ok := hashedNode.(hashNode); ok {
+			return hn, nil
+		}
+		return cn, nil
 	case hashNode:
-		return nil
+		return cn, nil
 	default:
 		// nil, valuenode shouldn't be committed
 		panic(fmt.Sprintf("%T: invalid node: %v", n, n))
@@ -203,9 +210,9 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 		}
 		c.saveNode[string(collapsed.flags.hash)] = nodeBytes
 
-		fmt.Println("encode node:", collapsed)
-		tmp := mustDecodeNode(collapsed.flags.hash, nodeBytes)
-		fmt.Println("decode node:", tmp)
+		//fmt.Println("encode node:", collapsed)
+		//tmp := mustDecodeNode(collapsed.flags.hash, nodeBytes)
+		//fmt.Println("decode node:", tmp)
 
 		hashedNode := c.store(collapsed, db)
 		if hn, ok := hashedNode.(hashNode); ok {
@@ -229,7 +236,7 @@ func (c *committer) commitChildrenWithDelta(n *fullNode, db *Database) error {
 		// Note: it's impossible that the child in range [0, 15]
 		// is a valuenode.
 		if hn, ok := child.(*hashNode); ok {
-			err := c.commitWithDelta(*hn, db)
+			_, err := c.commitWithDelta(*hn, db)
 			if err != nil {
 				return err
 			}
