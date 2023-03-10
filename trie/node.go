@@ -19,6 +19,7 @@ package trie
 import (
 	"fmt"
 	"io"
+	"runtime/debug"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -108,6 +109,7 @@ func (n valueNode) fstring(ind string) string {
 func mustDecodeNode(hash, buf []byte) node {
 	n, err := decodeNode(hash, buf)
 	if err != nil {
+		debug.PrintStack()
 		panic(fmt.Sprintf("node %x: %v", hash, err))
 	}
 	return n
