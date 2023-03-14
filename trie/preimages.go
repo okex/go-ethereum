@@ -30,13 +30,15 @@ type preimageStore struct {
 	disk          ethdb.KeyValueStore
 	preimages     map[common.Hash][]byte // Preimages of nodes from the secure trie
 	preimagesSize common.StorageSize     // Storage size of the preimages cache
+	acProcessor   *ACProcessor
 }
 
 // newPreimageStore initializes the store for caching preimages.
-func newPreimageStore(disk ethdb.KeyValueStore) *preimageStore {
+func newPreimageStore(disk ethdb.KeyValueStore, acProcessor *ACProcessor) *preimageStore {
 	return &preimageStore{
-		disk:      disk,
-		preimages: make(map[common.Hash][]byte),
+		disk:        disk,
+		preimages:   make(map[common.Hash][]byte),
+		acProcessor: acProcessor,
 	}
 }
 
@@ -66,6 +68,11 @@ func (store *preimageStore) preimage(hash common.Hash) []byte {
 	if preimage != nil {
 		return preimage
 	}
+	if store.acProcessor != nil {
+		if v, ok := store.acProcessor.GetPreimage(hash); ok {
+			return v
+		}
+	}
 	return rawdb.ReadPreimage(store.disk, hash)
 }
 
@@ -77,7 +84,14 @@ func (store *preimageStore) commit(force bool) error {
 	if store.preimagesSize <= 4*1024*1024 && !force {
 		return nil
 	}
-	batch := store.disk.NewBatch()
+
+	var batch ethdb.Batch
+	if store.acProcessor != nil {
+		batch = NewBatchEx(store.acProcessor.kvdatas)
+		store.acProcessor.SetPreimages(store.preimages)
+	} else {
+		batch = store.disk.NewBatch()
+	}
 	rawdb.WritePreimages(batch, store.preimages)
 	if err := batch.Write(); err != nil {
 		return err

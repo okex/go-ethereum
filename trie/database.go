@@ -87,8 +87,9 @@ type Database struct {
 	childrenSize common.StorageSize // Storage size of the external children tracking
 	preimages    *preimageStore     // The store for caching preimages
 
-	lock       sync.RWMutex
-	statistics *RuntimeState // The runtime statistics
+	lock        sync.RWMutex
+	statistics  *RuntimeState // The runtime statistics
+	acProcessor *ACProcessor
 }
 
 // rawNode is a simple binary blob used to differentiate between collapsed trie
@@ -269,6 +270,7 @@ type Config struct {
 	Cache     int    // Memory allowance (MB) to use for caching trie nodes in memory
 	Journal   string // Journal of clean cache to survive node restarts
 	Preimages bool   // Flag whether the preimage of trie key is recorded
+	EnableAC  bool   // enable async commit
 }
 
 // NewDatabase creates a new trie database to store ephemeral trie content before
@@ -290,9 +292,13 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 			cleans = fastcache.LoadFromFileOrNew(config.Journal, config.Cache*1024*1024)
 		}
 	}
+	var acProcessor *ACProcessor
+	if config != nil && config.EnableAC {
+		acProcessor = NewACProcessor(diskdb)
+	}
 	var preimage *preimageStore
 	if config != nil && config.Preimages {
-		preimage = newPreimageStore(diskdb)
+		preimage = newPreimageStore(diskdb, acProcessor)
 	}
 	db := &Database{
 		diskdb: diskdb,
@@ -300,8 +306,12 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 		dirties: map[common.Hash]*cachedNode{{}: {
 			children: make(map[common.Hash]uint16),
 		}},
-		preimages:  preimage,
-		statistics: NewRuntimeState(),
+		preimages:   preimage,
+		statistics:  NewRuntimeState(),
+		acProcessor: acProcessor,
+	}
+	if db.acProcessor != nil {
+		fmt.Println("******* db.acProcessor is not nil")
 	}
 	return db
 }
@@ -372,6 +382,14 @@ func (db *Database) node(hash common.Hash) node {
 	}
 	memcacheDirtyMissMeter.Mark(1)
 
+	if db.acProcessor != nil {
+		if n, ok := db.acProcessor.GetDirty(hash); ok {
+			if db.cleans != nil {
+				db.cleans.Set(hash[:], n.rlp())
+			}
+			return n.obj(hash)
+		}
+	}
 	// Content unavailable in memory, attempt to retrieve from disk
 	enc, err := db.diskdb.Get(hash[:])
 	if err != nil || enc == nil {
@@ -416,6 +434,16 @@ func (db *Database) Node(hash common.Hash) ([]byte, error) {
 		return dirty.rlp(), nil
 	}
 	memcacheDirtyMissMeter.Mark(1)
+
+	if db.acProcessor != nil {
+		if n, ok := db.acProcessor.GetDirty(hash); ok {
+			enc := n.rlp()
+			if db.cleans != nil {
+				db.cleans.Set(hash[:], enc)
+			}
+			return enc, nil
+		}
+	}
 
 	// Content unavailable in memory, attempt to retrieve from disk
 	enc := rawdb.ReadTrieNode(db.diskdb, hash)
@@ -649,7 +677,13 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// memory cache during commit but not yet in persistent storage). This is ensured
 	// by only uncaching existing data when the database write finalizes.
 	start := time.Now()
-	batch := db.diskdb.NewBatch()
+
+	var batch ethdb.Batch
+	if db.acProcessor != nil {
+		batch = NewBatchEx(db.acProcessor.kvdatas)
+	} else {
+		batch = db.diskdb.NewBatch()
+	}
 
 	// Move all of the accumulated preimages into a write batch
 	if db.preimages != nil {
@@ -709,6 +743,9 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	})
 	if err != nil {
 		return err
+	}
+	if db.acProcessor != nil {
+		db.acProcessor.SetDirty(hash, node)
 	}
 	// If we've reached an optimal batch size, commit and start over
 	rawdb.WriteTrieNode(batch, hash, node.rlp())
