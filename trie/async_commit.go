@@ -1,6 +1,7 @@
 package trie
 
 import (
+	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"sync"
@@ -8,6 +9,7 @@ import (
 
 const (
 	batchChanLen = 100000
+	CacheCount   = 100
 )
 
 type keyvalue struct {
@@ -17,18 +19,21 @@ type keyvalue struct {
 }
 
 type ACProcessor struct {
-	kvdatas chan []*keyvalue
-	cache   *Cache
-	diskdb  ethdb.KeyValueStore
+	kvdatas    chan []*keyvalue
+	clearChans chan []*keyvalue
+	cache      *CacheList
+	diskdb     ethdb.KeyValueStore
 }
 
 func NewACProcessor(db ethdb.KeyValueStore) *ACProcessor {
 	ac := &ACProcessor{
-		kvdatas: make(chan []*keyvalue, batchChanLen),
-		cache:   NewCache(),
-		diskdb:  db,
+		kvdatas:    make(chan []*keyvalue, batchChanLen),
+		clearChans: make(chan []*keyvalue, batchChanLen),
+		cache:      NewCacheList(),
+		diskdb:     db,
 	}
 	go ac.ACCommit()
+	go ac.Clear()
 	return ac
 }
 
@@ -49,11 +54,20 @@ func (ac *ACProcessor) ACCommit() {
 		//valueSize := batch.ValueSize()
 		//tm1 := time.Now()
 		batch.Write()
+		ac.clearChans <- kvs
+		//tm2 := time.Now()
+		//fmt.Println("ACCommit ac chan remain", len(ac.kvdatas), "batch value size", valueSize,
+		//	"write cost time", tm2.Sub(tm1),
+		//)
+	}
+}
+
+func (ac *ACProcessor) Clear() {
+	for kvs := range ac.clearChans {
 		//tm2 := time.Now()
 		ac.cache.Clear(kvs)
 		//tm3 := time.Now()
-		//fmt.Println("ACCommit ac chan remain", len(ac.kvdatas), "batch value size", valueSize,
-		//	"write cost time", tm2.Sub(tm1),
+		//fmt.Println("Clear ac chan remain", len(ac.clearChans), "kvs count", len(kvs),
 		//	"clear cost time", tm3.Sub(tm2),
 		//)
 	}
@@ -73,6 +87,54 @@ func (ac *ACProcessor) SetDirty(key common.Hash, node *cachedNode) {
 
 func (ac *ACProcessor) SetPreimages(images map[common.Hash][]byte) {
 	ac.cache.SetPreimages(images)
+}
+
+type CacheList struct {
+	caches []*Cache
+}
+
+func NewCacheList() *CacheList {
+	cal := &CacheList{}
+	cal.caches = make([]*Cache, CacheCount)
+	for i := range cal.caches {
+		cal.caches[i] = NewCache()
+	}
+	return cal
+}
+
+func (ac *CacheList) GetDirty(key common.Hash) (*cachedNode, bool) {
+	h := xxhash.Sum64(key[:])
+	idx := h % CacheCount
+	return ac.caches[idx].GetDirty(key)
+}
+
+func (ac *CacheList) GetPreimage(key common.Hash) ([]byte, bool) {
+	h := xxhash.Sum64(key[:])
+	idx := h % CacheCount
+	return ac.caches[idx].GetPreimage(key)
+}
+
+func (ac *CacheList) SetDirty(key common.Hash, node *cachedNode) {
+	h := xxhash.Sum64(key[:])
+	idx := h % CacheCount
+	ac.caches[idx].SetDirty(key, node)
+}
+
+func (ac *CacheList) SetPreimages(images map[common.Hash][]byte) {
+	for k, v := range images {
+		h := xxhash.Sum64(k[:])
+		idx := h % CacheCount
+		ac.caches[idx].SetPreimage(k, v)
+	}
+}
+
+func (ac *CacheList) Clear(kvs []*keyvalue) {
+	for _, kv := range kvs {
+		h := xxhash.Sum64(kv.key)
+		idx := h % CacheCount
+		hash := common.BytesToHash(kv.key)
+		ac.caches[idx].Clear(hash)
+	}
 }
 
 type Cache struct {
@@ -103,6 +165,12 @@ func (c *Cache) GetDirty(key common.Hash) (*cachedNode, bool) {
 	return nil, false
 }
 
+func (c *Cache) SetPreimage(key common.Hash, value []byte) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.preimages[key] = value
+}
+
 func (c *Cache) SetPreimages(images map[common.Hash][]byte) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -120,7 +188,17 @@ func (c *Cache) GetPreimage(key common.Hash) ([]byte, bool) {
 	return nil, false
 }
 
-func (c *Cache) Clear(kvs []*keyvalue) {
+func (c *Cache) Clear(hash common.Hash) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if _, ok := c.dirties[hash]; ok {
+		delete(c.dirties, hash)
+	} else { // Need attention the preimages key preimageKey(hash)
+		delete(c.preimages, hash)
+	}
+}
+
+func (c *Cache) Clears(kvs []*keyvalue) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	for _, kv := range kvs {
