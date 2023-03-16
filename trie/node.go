@@ -136,7 +136,7 @@ func decodeNode(hash, buf []byte) (node, error) {
 	}
 }
 
-func decodeShort(hash, elems []byte) (node, error) {
+func decodeShort(hash, elems []byte) (*shortNode, error) {
 	kbuf, rest, err := rlp.SplitString(elems)
 	if err != nil {
 		return nil, err

@@ -142,6 +142,7 @@ func (c *committer) commitWithDelta(nodeHash []byte, db *Database) (node, error)
 			}
 		}
 		// The key needs to be copied, since we're delivering it to database
+		cn.Key = hexToCompact(cn.Key)
 		hashedNode := c.store(cn, db)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn, nil
@@ -190,7 +191,6 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 			}
 			collapsed.Val = childV
 		}
-
 		// The key needs to be copied, since we're delivering it to database
 		collapsed.Key = hexToCompact(cn.Key)
 
@@ -203,7 +203,9 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 
 		fmt.Println("===========================begin===========================")
 		fmt.Println("encode node:", collapsed)
-		tmp := mustDecodeNode(collapsed.flags.hash, nodeBytes)
+		tn := mustDecodeNode(collapsed.flags.hash, nodeBytes)
+		tmp := tn.(*shortNode)
+		tmp.Key = hexToCompact(tmp.Key)
 		fmt.Println("decode node:", tmp)
 		fmt.Println("===========================end===========================")
 
