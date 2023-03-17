@@ -1,8 +1,11 @@
 package trie
 
 import (
+	"bytes"
+	"fmt"
 	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"sync"
 )
@@ -51,25 +54,14 @@ func (ac *ACProcessor) ACCommit() {
 				batch.Put(kv.key, kv.value)
 			}
 		}
-		//valueSize := batch.ValueSize()
-		//tm1 := time.Now()
 		batch.Write()
 		ac.clearChans <- kvs
-		//tm2 := time.Now()
-		//fmt.Println("ACCommit ac chan remain", len(ac.kvdatas), "batch value size", valueSize,
-		//	"write cost time", tm2.Sub(tm1),
-		//)
 	}
 }
 
 func (ac *ACProcessor) Clear() {
 	for kvs := range ac.clearChans {
-		//tm2 := time.Now()
 		ac.cache.Clear(kvs)
-		//tm3 := time.Now()
-		//fmt.Println("Clear ac chan remain", len(ac.clearChans), "kvs count", len(kvs),
-		//	"clear cost time", tm3.Sub(tm2),
-		//)
 	}
 }
 
@@ -130,11 +122,22 @@ func (ac *CacheList) SetPreimages(images map[common.Hash][]byte) {
 
 func (ac *CacheList) Clear(kvs []*keyvalue) {
 	for _, kv := range kvs {
-		h := xxhash.Sum64(kv.key)
+		key := bytes.TrimPrefix(kv.key, rawdb.PreimagePrefix)
+		h := xxhash.Sum64(key)
 		idx := h % CacheCount
-		hash := common.BytesToHash(kv.key)
+		hash := common.BytesToHash(key)
 		ac.caches[idx].Clear(hash)
 	}
+	var lkvs = len(kvs)
+	var ld = 0
+	var lp = 0
+	for _, ca := range ac.caches {
+		sd, sp := ca.Size()
+		ld += sd
+		lp += sp
+	}
+	fmt.Println("#### end clear ####", "kvs", lkvs, "dirty size", ld,
+		"preimages size", lp)
 }
 
 type Cache struct {
@@ -198,6 +201,12 @@ func (c *Cache) Clear(hash common.Hash) {
 	}
 }
 
+func (c *Cache) Size() (int, int) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.dirties), len(c.preimages)
+}
+
 func (c *Cache) Clears(kvs []*keyvalue) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -242,7 +251,7 @@ func (b *BatchEx) ValueSize() int {
 }
 
 func (b *BatchEx) Reset() {
-	b.writes = b.writes[:0]
+	b.writes = nil
 	b.size = 0
 }
 
