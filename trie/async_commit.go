@@ -2,7 +2,6 @@ package trie
 
 import (
 	"bytes"
-	"fmt"
 	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -128,16 +127,6 @@ func (ac *CacheList) Clear(kvs []*keyvalue) {
 		hash := common.BytesToHash(key)
 		ac.caches[idx].Clear(hash)
 	}
-	var lkvs = len(kvs)
-	var ld = 0
-	var lp = 0
-	for _, ca := range ac.caches {
-		sd, sp := ca.Size()
-		ld += sd
-		lp += sp
-	}
-	fmt.Println("#### end clear ####", "kvs", lkvs, "dirty size", ld,
-		"preimages size", lp)
 }
 
 type Cache struct {

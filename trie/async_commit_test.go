@@ -131,15 +131,15 @@ func TestACIterator(t *testing.T) {
 		Preimages: true,
 		EnableAC:  true,
 	})
-	ctr, _ := New(common.Hash{}, triedb)
+	ctr, _ := New(common.Hash{}, common.Hash{}, triedb)
 	for _, val := range testdata1 {
 		ctr.Update([]byte(val.k), []byte(val.v))
 	}
-	root, _ := ctr.Commit(nil)
+	root, _, _ := ctr.Commit(false)
 
 	triedb.Commit(root, true, nil)
 
-	trie, err := New(root, triedb)
+	trie, err := New(root, common.Hash{}, triedb)
 	assert.NoError(t, err)
 
 	// should stop the ACCommit() for test
