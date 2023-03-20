@@ -230,7 +230,6 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 func (c *committer) commitChildrenWithDelta(n *fullNode, db *Database) error {
 	for i := 0; i < 16; i++ {
 		child := n.Children[i]
-		fmt.Println("child:", child)
 		if child == nil {
 			continue
 		}
