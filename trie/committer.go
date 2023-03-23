@@ -51,7 +51,7 @@ func newCommitter(owner common.Hash, collectLeaf bool) *committer {
 func (c *committer) SetDelta(delta []*NodeDelta) {
 	for _, d := range delta {
 		c.saveNode[d.Key] = d.Val
-		fmt.Printf("savenode-k:%x", d.Key)
+		fmt.Printf("savenode-k:%x\n", d.Key)
 	}
 	fmt.Println("saveNode:", len(c.saveNode))
 }
@@ -59,7 +59,7 @@ func (c *committer) SetDelta(delta []*NodeDelta) {
 func (c *committer) GetDelta() []*NodeDelta {
 	delta := make([]*NodeDelta, 0, len(c.saveNode))
 	for k, v := range c.saveNode {
-		fmt.Printf("savenode-k:%x", k)
+		fmt.Printf("savenode-k:%x\n", k)
 		delta = append(delta, &NodeDelta{k, v})
 	}
 	return delta
