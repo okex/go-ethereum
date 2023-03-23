@@ -128,6 +128,11 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 			if err != nil {
 				return nil, err
 			}
+		} else if h, ok := cn.Val.(hashNode); ok {
+			_, err := c.commitWithDelta(append(path, cn.Key...), h)
+			if err != nil {
+				return nil, err
+			}
 		}
 		// The key needs to be copied, since we're delivering it to database
 		cn.Key = hexToCompact(cn.Key)
@@ -235,7 +240,13 @@ func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) error {
 		// If it's the hashed child, save the hash value directly.
 		// Note: it's impossible that the child in range [0, 15]
 		// is a valuenode.
-		if hn, ok := child.(hashNode); ok {
+		if hn, ok := child.(*hashNode); ok {
+			//fmt.Printf("n:%x, i:%x, chidl-node:%x\n", n.flags.hash, i, hn)
+			_, err := c.commitWithDelta(append(path, byte(i)), *hn)
+			if err != nil {
+				return err
+			}
+		} else if hn, ok := child.(hashNode); ok {
 			//fmt.Printf("n:%x, i:%x, chidl-node:%x\n", n.flags.hash, i, hn)
 			_, err := c.commitWithDelta(append(path, byte(i)), hn)
 			if err != nil {
