@@ -638,6 +638,7 @@ func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (commo
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
 	h := newCommitter(t.owner, collectLeaf)
+	fmt.Printf("setDelta:", len(inputDelta))
 	h.SetDelta(inputDelta)
 	newRoot, nodes, err := h.Commit(t.root)
 	if err != nil {
@@ -673,6 +674,7 @@ func (t *Trie) CommitForDelta(collectLeaf bool) (root common.Hash, nodes *NodeSe
 		return common.Hash{}, nil, nil, err
 	}
 	delta = h.GetDelta()
+	fmt.Println("getDetla:", len(delta))
 	t.root = newRoot
 	return rootHash, nodes, delta, nil
 }
