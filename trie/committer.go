@@ -147,6 +147,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 	// Commit children, then parent, and remove the dirty flag.
 	switch cn := n.(type) {
 	case *shortNode:
+		fmt.Printf("nodeHash:%x, type:sn", cn.flags.hash)
 		// Commit child
 		collapsed := cn.copy()
 
@@ -175,6 +176,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 		}
 		return collapsed, nil
 	case *fullNode:
+		fmt.Printf("nodeHash:%x, type:fn", cn.flags.hash)
 		hashedKids, err := c.commitChildren(path, cn)
 		if err != nil {
 			return nil, err
@@ -195,6 +197,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 		}
 		return collapsed, nil
 	case hashNode:
+		fmt.Printf("nodeHash:%x, type:hn", cn)
 		return cn, nil
 	default:
 		// nil, valuenode shouldn't be committed
