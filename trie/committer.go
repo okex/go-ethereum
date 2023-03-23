@@ -94,6 +94,7 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 		var hn hashNode = nodeHash
 		return hn, nil
 	}
+	fmt.Printf("nodeHash:%x\n", nodeHash)
 	n := mustDecodeNode(nodeHash, c.saveNode[string(nodeHash)])
 	// Commit children, then parent, and remove remove the dirty flag.
 	switch cn := n.(type) {
