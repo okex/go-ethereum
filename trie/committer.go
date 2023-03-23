@@ -210,7 +210,7 @@ func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) error {
 		// Note: it's impossible that the child in range [0, 15]
 		// is a valuenode.
 		if hn, ok := child.(hashNode); ok {
-			fmt.Printf("i:%x, chidl-node:%x\n", i, hn)
+			fmt.Printf("n:%x, i:%x, chidl-node:%x\n", n.flags.hash, i, hn)
 			_, err := c.commitWithDelta(append(path, byte(i)), hn)
 			if err != nil {
 				return err
