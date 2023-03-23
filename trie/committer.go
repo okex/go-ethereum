@@ -51,6 +51,7 @@ func newCommitter(owner common.Hash, collectLeaf bool) *committer {
 func (c *committer) SetDelta(delta []*NodeDelta) {
 	for _, d := range delta {
 		c.saveNode[d.Key] = d.Val
+		fmt.Printf("savenode-k:%x", d.Key)
 	}
 	fmt.Println("saveNode:", len(c.saveNode))
 }
@@ -58,6 +59,7 @@ func (c *committer) SetDelta(delta []*NodeDelta) {
 func (c *committer) GetDelta() []*NodeDelta {
 	delta := make([]*NodeDelta, 0, len(c.saveNode))
 	for k, v := range c.saveNode {
+		fmt.Printf("savenode-k:%x", k)
 		delta = append(delta, &NodeDelta{k, v})
 	}
 	return delta
@@ -95,7 +97,7 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 		var hn hashNode = nodeHash
 		return hn, nil
 	}
-	fmt.Printf("nodeHash:%x, type:", nodeHash)
+	fmt.Printf("nodeHash:%x, type:", string(nodeHash))
 	n := mustDecodeNode(nodeHash, c.saveNode[string(nodeHash)])
 	// Commit children, then parent, and remove remove the dirty flag.
 	switch cn := n.(type) {
