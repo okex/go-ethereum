@@ -147,7 +147,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 	// Commit children, then parent, and remove the dirty flag.
 	switch cn := n.(type) {
 	case *shortNode:
-		fmt.Printf("nodeHash:%x, type:sn", cn.flags.hash)
+
 		// Commit child
 		collapsed := cn.copy()
 
@@ -169,14 +169,14 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 			panic("encode error: " + err.Error())
 		}
 		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
-
+		fmt.Printf("nodeHash:%x, type:sn\n", collapsed.flags.hash)
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn, nil
 		}
 		return collapsed, nil
 	case *fullNode:
-		fmt.Printf("nodeHash:%x, type:fn", cn.flags.hash)
+
 		hashedKids, err := c.commitChildren(path, cn)
 		if err != nil {
 			return nil, err
@@ -190,14 +190,14 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 			panic("encode error: " + err.Error())
 		}
 		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
-
+		fmt.Printf("nodeHash:%x, type:fn\n", collapsed.flags.hash)
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn, nil
 		}
 		return collapsed, nil
 	case hashNode:
-		fmt.Printf("nodeHash:%x, type:hn", cn)
+		fmt.Printf("nodeHash:%x, type:hn\n", cn)
 		return cn, nil
 	default:
 		// nil, valuenode shouldn't be committed
