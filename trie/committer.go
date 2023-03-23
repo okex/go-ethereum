@@ -90,6 +90,7 @@ func (c *committer) Commit(n node) (hashNode, *NodeSet, error) {
 }
 
 func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
+
 	if c.saveNode[string(nodeHash)] == nil {
 		var hn hashNode = nodeHash
 		return hn, nil
@@ -201,6 +202,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) error {
 	for i := 0; i < 16; i++ {
 		child := n.Children[i]
+
 		if child == nil {
 			continue
 		}
@@ -208,6 +210,7 @@ func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) error {
 		// Note: it's impossible that the child in range [0, 15]
 		// is a valuenode.
 		if hn, ok := child.(hashNode); ok {
+			fmt.Printf("i:%x, chidl-node:%x\n", i, hn)
 			_, err := c.commitWithDelta(append(path, byte(i)), hn)
 			if err != nil {
 				return err
