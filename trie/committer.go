@@ -52,6 +52,7 @@ func (c *committer) SetDelta(delta []*NodeDelta) {
 	for _, d := range delta {
 		c.saveNode[d.Key] = d.Val
 	}
+	fmt.Println("saveNode:", len(c.saveNode))
 }
 
 func (c *committer) GetDelta() []*NodeDelta {
@@ -90,16 +91,16 @@ func (c *committer) Commit(n node) (hashNode, *NodeSet, error) {
 }
 
 func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
-
 	if c.saveNode[string(nodeHash)] == nil {
 		var hn hashNode = nodeHash
 		return hn, nil
 	}
-	fmt.Printf("nodeHash:%x\n", nodeHash)
+	fmt.Printf("nodeHash:%x, type:", nodeHash)
 	n := mustDecodeNode(nodeHash, c.saveNode[string(nodeHash)])
 	// Commit children, then parent, and remove remove the dirty flag.
 	switch cn := n.(type) {
 	case *shortNode:
+		fmt.Println("sn")
 		// If the child is fullnode, recursively commit.
 		// Otherwise it can only be hashNode or valueNode.
 		if h, ok := cn.Val.(*hashNode); ok {
@@ -116,6 +117,7 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 		}
 		return cn, nil
 	case *fullNode:
+		fmt.Println("fn")
 		err := c.commitChildrenWithDelta(path, cn)
 		if err != nil {
 			return nil, err
@@ -127,6 +129,7 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 		}
 		return cn, nil
 	case hashNode:
+		fmt.Println("hn")
 		return cn, nil
 	default:
 		// nil, valuenode shouldn't be committed
@@ -210,7 +213,7 @@ func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) error {
 		// Note: it's impossible that the child in range [0, 15]
 		// is a valuenode.
 		if hn, ok := child.(hashNode); ok {
-			fmt.Printf("n:%x, i:%x, chidl-node:%x\n", n.flags.hash, i, hn)
+			//fmt.Printf("n:%x, i:%x, chidl-node:%x\n", n.flags.hash, i, hn)
 			_, err := c.commitWithDelta(append(path, byte(i)), hn)
 			if err != nil {
 				return err
