@@ -18,6 +18,7 @@ package trie
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rlp"
 
@@ -51,7 +52,7 @@ func newCommitter(owner common.Hash, collectLeaf bool) *committer {
 func (c *committer) SetDelta(delta []*NodeDelta) {
 	for _, d := range delta {
 		c.saveNode[d.Key] = d.Val
-		fmt.Printf("savenode-k:%x\n", d.Key)
+		fmt.Printf("savenode-k:%x, v:%x\n", d.Key, sha256.Sum256(d.Val))
 	}
 	fmt.Println("saveNode:", len(c.saveNode))
 }
@@ -59,7 +60,7 @@ func (c *committer) SetDelta(delta []*NodeDelta) {
 func (c *committer) GetDelta() []*NodeDelta {
 	delta := make([]*NodeDelta, 0, len(c.saveNode))
 	for k, v := range c.saveNode {
-		fmt.Printf("savenode-k:%x\n", k)
+		fmt.Printf("savenode-k:%x, v:%x\n", k, sha256.Sum256(v))
 		delta = append(delta, &NodeDelta{k, v})
 	}
 	return delta
@@ -103,6 +104,9 @@ func (c *committer) commitWithDelta(path, nodeHash []byte) (node, error) {
 	switch cn := n.(type) {
 	case *shortNode:
 		fmt.Println("sn")
+		if fmt.Sprintf("%x", string(nodeHash)) == "3888d9bc90b789be55068274f45fe816b58a5bee0f745d5df62e5b45833f13a2" {
+			fmt.Println("val:", cn.Val)
+		}
 		// If the child is fullnode, recursively commit.
 		// Otherwise it can only be hashNode or valueNode.
 		if h, ok := cn.Val.(*hashNode); ok {
