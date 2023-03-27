@@ -631,10 +631,10 @@ func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (commo
 		return common.Hash{}, nil, nil, err
 	}
 	sd := &SnapDelta{}
-	sd.insertVal = h.GetSnap()
-	sd.delVal = make(map[string]struct{}, len(t.tracer.delete))
+	sd.InsertVal = h.GetSnap()
+	sd.DelVal = make(map[string]struct{}, len(t.tracer.delete))
 	for k, v := range t.tracer.delete {
-		sd.delVal[k] = v
+		sd.DelVal[k] = v
 	}
 
 	t.root = newRoot
