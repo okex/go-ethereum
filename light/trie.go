@@ -175,9 +175,9 @@ func (t *odrTrie) CommitForDelta(collectLeaf bool) (common.Hash, *trie.NodeSet, 
 	return t.trie.CommitForDelta(collectLeaf)
 }
 
-func (t *odrTrie) CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, error) {
+func (t *odrTrie) CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, *trie.SnapDelta, error) {
 	if t.trie == nil {
-		return t.id.Root, nil, nil
+		return t.id.Root, nil, nil, nil
 	}
 	return t.trie.CommitWithDelta(inputDelta, collectLeaf)
 }

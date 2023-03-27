@@ -37,6 +37,7 @@ type committer struct {
 	nodes       *NodeSet
 	collectLeaf bool
 	saveNode    map[string][]byte
+	snapVal     map[string][]byte
 }
 
 // newCommitter creates a new committer or picks one from the pool.
@@ -45,6 +46,7 @@ func newCommitter(owner common.Hash, collectLeaf bool) *committer {
 		nodes:       NewNodeSet(owner),
 		collectLeaf: collectLeaf,
 		saveNode:    map[string][]byte{},
+		snapVal:     map[string][]byte{},
 	}
 }
 
@@ -60,6 +62,10 @@ func (c *committer) GetDelta() []*NodeDelta {
 		delta = append(delta, &NodeDelta{k, v})
 	}
 	return delta
+}
+
+func (c *committer) GetSnap() map[string][]byte {
+	return c.snapVal
 }
 
 // Commit collapses a node down into a hash node and inserts it into the database
@@ -292,6 +298,7 @@ func (c *committer) store(path []byte, n node) node {
 		if sn, ok := n.(*shortNode); ok {
 			if val, ok := sn.Val.(valueNode); ok {
 				c.nodes.addLeaf(&leaf{blob: val, parent: nhash})
+				c.snapVal[string(path)] = val
 			}
 		}
 	}

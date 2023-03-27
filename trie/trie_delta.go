@@ -50,3 +50,8 @@ func (mdm MptDeltaMap) Unmarshal(deltaBytes []byte) error {
 	}
 	return nil
 }
+
+type SnapDelta struct {
+	insertVal map[string][]byte
+	delVal    map[string]struct{}
+}

@@ -102,7 +102,7 @@ type Trie interface {
 	// be created with new root and updated trie database for following usage
 	Commit(collectLeaf bool) (common.Hash, *trie.NodeSet, error)
 	CommitForDelta(collectLeaf bool) (common.Hash, *trie.NodeSet, []*trie.NodeDelta, error)
-	CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, error)
+	CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, *trie.SnapDelta, error)
 
 	// NodeIterator returns an iterator that returns nodes of the trie. Iteration
 	// starts at the key after the given start key.

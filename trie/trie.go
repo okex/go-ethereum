@@ -615,11 +615,11 @@ func (t *Trie) Commit(collectLeaf bool) (common.Hash, *NodeSet, error) {
 	return rootHash, nodes, nil
 }
 
-func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (common.Hash, *NodeSet, error) {
+func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (common.Hash, *NodeSet, *SnapDelta, error) {
 	defer t.tracer.reset()
 
 	if t.root == nil {
-		return emptyRoot, nil, nil
+		return emptyRoot, nil, nil, nil
 	}
 
 	// Derive the hash for all dirty nodes first. We hold the assumption
@@ -628,10 +628,17 @@ func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (commo
 	h.SetDelta(inputDelta)
 	newRoot, nodes, err := h.Commit(t.root)
 	if err != nil {
-		return common.Hash{}, nil, err
+		return common.Hash{}, nil, nil, err
 	}
+	sd := &SnapDelta{}
+	sd.insertVal = h.GetSnap()
+	sd.delVal = make(map[string]struct{}, len(t.tracer.delete))
+	for k, v := range t.tracer.delete {
+		sd.delVal[k] = v
+	}
+
 	t.root = newRoot
-	return t.Hash(), nodes, nil
+	return t.Hash(), nodes, sd, nil
 }
 
 func (t *Trie) CommitForDelta(collectLeaf bool) (root common.Hash, nodes *NodeSet, delta []*NodeDelta, err error) {
