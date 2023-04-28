@@ -39,7 +39,8 @@ var (
 
 	// errStopToken is an internal token indicating interpreter loop termination,
 	// never returned to outside callers.
-	errStopToken = errors.New("stop token")
+	errStopToken                   = errors.New("stop token")
+	ErrCMBirdgeInsufficientBalance = errors.New("cmBirdgeContract re back value to caller failed")
 )
 
 // ErrStackUnderflow wraps an evm error when the items on the stack less
