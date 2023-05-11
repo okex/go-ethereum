@@ -71,7 +71,7 @@ type BlockContext struct {
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
 	BlockNumber *big.Int       // Provides information for NUMBER
-	Time        uint64         // Provides information for TIME
+	Time        *big.Int       // Provides information for TIME
 	Difficulty  *big.Int       // Provides information for DIFFICULTY
 	BaseFee     *big.Int       // Provides information for BASEFEE
 	Random      *common.Hash   // Provides information for PREVRANDAO
@@ -130,7 +130,7 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 		StateDB:     statedb,
 		Config:      config,
 		chainConfig: chainConfig,
-		chainRules:  chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time),
+		chainRules:  chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time.Uint64()),
 	}
 	evm.interpreter = NewEVMInterpreter(evm)
 	return evm
@@ -164,7 +164,7 @@ func (evm *EVM) SetBlockContext(blockCtx BlockContext) {
 	evm.Context = blockCtx
 	num := blockCtx.BlockNumber
 	timestamp := blockCtx.Time
-	evm.chainRules = evm.chainConfig.Rules(num, blockCtx.Random != nil, timestamp)
+	evm.chainRules = evm.chainConfig.Rules(num, blockCtx.Random != nil, timestamp.Uint64())
 }
 
 // Call executes the contract associated with the addr with the given input as

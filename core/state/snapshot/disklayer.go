@@ -42,6 +42,8 @@ type diskLayer struct {
 	genAbort   chan chan *generatorStats // Notification channel to abort generating the snapshot in this layer
 
 	lock sync.RWMutex
+
+	Retriever
 }
 
 // Root returns  root hash for which this snapshot was made.

@@ -173,6 +173,8 @@ type Tree struct {
 
 	// Test hooks
 	onFlatten func() // Hook invoked when the bottom most diff layers are flattened
+
+	Retriever
 }
 
 // New attempts to load an already existing snapshot from a persistent key-value
