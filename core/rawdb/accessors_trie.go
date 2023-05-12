@@ -67,7 +67,7 @@ func (h *nodeHasher) hashData(data []byte) (n common.Hash) {
 // hash with the specified node path.
 func ReadAccountTrieNode(db ethdb.KeyValueReader, path []byte) ([]byte, common.Hash) {
 	data, err := db.Get(accountTrieNodeKey(path))
-	if err != nil {
+	if err != nil || len(data) == 0 {
 		return nil, common.Hash{}
 	}
 	hasher := newNodeHasher()
