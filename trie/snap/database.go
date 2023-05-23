@@ -87,6 +87,8 @@ type Config struct {
 	StateHistory uint64 // Number of recent blocks to maintain state history for
 	DirtySize    int    // Maximum memory allowance (in bytes) for caching dirty nodes
 	ReadOnly     bool   // Flag whether the database is opened in read only mode.
+
+	MaxDiffLayers int // The maximum diff layers allowed in the layer tree.
 }
 
 // Defaults contains default settings for use on the Ethereum main net.
@@ -194,7 +196,7 @@ func (db *Database) Update(root common.Hash, parentRoot common.Hash, nodes map[c
 	// - head-1 layer is paired with HEAD-1 state
 	// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
 	// - head-128 layer(disk layer) is paired with HEAD-128 state
-	return db.tree.cap(root, maxDiffLayers)
+	return db.tree.cap(root, db.config.MaxDiffLayers)
 }
 
 // Commit traverses downwards the snapshot tree from a specified layer with the
@@ -253,7 +255,7 @@ func (db *Database) Journal(root common.Hash) error {
 	rawdb.WriteTrieJournal(db.diskdb, journal.Bytes())
 
 	// Set the db in read only mode to reject all following mutations
-	db.readOnly = true
+	//db.readOnly = true // In order to repair the data when panic, each journal needs to be saved to disk.
 	log.Info("Stored journal in triedb", "disk", diskroot, "size", common.StorageSize(journal.Len()))
 	return nil
 }
