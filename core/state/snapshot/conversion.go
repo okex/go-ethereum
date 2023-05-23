@@ -71,7 +71,7 @@ func GenerateTrie(snaptree *Tree, root common.Hash, src ethdb.Database, dst ethd
 	}
 	defer acctIt.Release()
 
-	got, err := generateTrieRoot(dst, acctIt, common.Hash{}, stackTrieGenerate, func(dst ethdb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
+	got, err := generateTrieRootCustom(dst, acctIt, common.Hash{}, stackTrieGenerate, func(dst ethdb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
 		// Migrate the code first, commit the contract code into the tmp db.
 		if codeHash != emptyCode {
 			code := rawdb.ReadCode(src, codeHash)
@@ -87,12 +87,12 @@ func GenerateTrie(snaptree *Tree, root common.Hash, src ethdb.Database, dst ethd
 		}
 		defer storageIt.Release()
 
-		hash, err := generateTrieRoot(dst, storageIt, accountHash, stackTrieGenerate, nil, stat, false)
+		hash, err := generateTrieRootCustom(dst, storageIt, accountHash, stackTrieGenerate, nil, stat, false, snaptree.Retriever)
 		if err != nil {
 			return common.Hash{}, err
 		}
 		return hash, nil
-	}, newGenerateStats(), true)
+	}, newGenerateStats(), true, snaptree.Retriever)
 
 	if err != nil {
 		return err

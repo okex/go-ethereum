@@ -622,7 +622,7 @@ func generateAccounts(ctx *generatorContext, dl *diskLayer, accMarker []byte) er
 
 		// If the iterated account is the contract, create a further loop to
 		// verify or regenerate the contract storage.
-		if acc.Root == emptyRoot {
+		if acc.Root == emptyRoot || acc.Root == zeroRoot {
 			ctx.removeStorageAt(account)
 		} else {
 			var storeMarker []byte
