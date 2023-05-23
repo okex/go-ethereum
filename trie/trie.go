@@ -618,10 +618,6 @@ func (t *Trie) Commit(collectLeaf bool) (common.Hash, *NodeSet, error) {
 func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (common.Hash, *NodeSet, *SnapDelta, error) {
 	defer t.tracer.reset()
 
-	if t.root == nil {
-		return emptyRoot, nil, nil, nil
-	}
-
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
 	h := newCommitter(t.owner, collectLeaf)
