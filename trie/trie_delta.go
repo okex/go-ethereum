@@ -10,6 +10,7 @@ type MptDeltaMap map[string]*MptDelta
 type MptDelta struct {
 	NodeDelta []*NodeDelta    `json:"node_delta"`
 	Storage   []*StorageDelta `json:"storage"`
+	Snapshot  []byte          `json:"snapshot"`
 }
 
 type StorageDelta struct {
