@@ -11,6 +11,7 @@ type MptDelta struct {
 	NodeDelta []*NodeDelta    `json:"node_delta"`
 	Storage   []*StorageDelta `json:"storage"`
 	Snapshot  []byte          `json:"snapshot"`
+	RawDB     []byte          `json:"raw_db"`
 }
 
 type StorageDelta struct {
