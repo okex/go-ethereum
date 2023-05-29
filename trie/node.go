@@ -139,6 +139,11 @@ func decodeNodeUnsafe(hash, buf []byte) (node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode error: %v", err)
 	}
+
+	src := fmt.Sprintf("%x", hash)
+	if src == "6428691F926840bf2C123bB2c281B9aF980f52a3" {
+		log.Printf("decodeNodeUnsafe: hash %x buf %x elem %x\n", hash, buf, elems)
+	}
 	switch c, _ := rlp.CountValues(elems); c {
 	case 2:
 		n, err := decodeShort(hash, elems)
