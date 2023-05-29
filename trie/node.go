@@ -19,6 +19,7 @@ package trie
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -167,6 +168,7 @@ func decodeShort(hash, elems []byte) (node, error) {
 	}
 	r, _, err := decodeRef(rest)
 	if err != nil {
+		log.Printf("short decodeRef error: %x,elem %x\n", hash, elems)
 		return nil, wrapError(err, "val")
 	}
 	return &shortNode{key, r, flag}, nil
@@ -177,6 +179,7 @@ func decodeFull(hash, elems []byte) (*fullNode, error) {
 	for i := 0; i < 16; i++ {
 		cld, rest, err := decodeRef(elems)
 		if err != nil {
+			log.Printf("full decodeRef error: index %d,hash %x,elem %x\n", i, hash, elems)
 			return n, wrapError(err, fmt.Sprintf("[%d]", i))
 		}
 		n.Children[i], elems = cld, rest
