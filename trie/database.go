@@ -712,6 +712,7 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	}
 	// If we've reached an optimal batch size, commit and start over
 	rawdb.WriteTrieNode(batch, hash, node.rlp())
+	mustDecodeNodeUnsafe(hash.Bytes(), node.rlp())
 	if callback != nil {
 		callback(hash)
 	}
