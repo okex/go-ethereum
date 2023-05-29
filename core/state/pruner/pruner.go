@@ -78,6 +78,8 @@ type Pruner struct {
 	db          ethdb.Database
 	stateBloom  *stateBloom
 	snaptree    *snapshot.Tree
+
+	rootHash common.Hash
 }
 
 // NewPruner creates the pruner instance.
@@ -111,6 +113,35 @@ func NewPruner(db ethdb.Database, config Config) (*Pruner, error) {
 		db:          db,
 		stateBloom:  stateBloom,
 		snaptree:    snaptree,
+	}, nil
+}
+
+func NewPrunerCustom(db ethdb.Database, config Config, rootHash common.Hash, retriever snapshot.Retriever) (*Pruner, error) {
+	snapconfig := snapshot.Config{
+		CacheSize:  256,
+		Recovery:   false,
+		NoBuild:    true,
+		AsyncBuild: false,
+	}
+	snaptree, err := snapshot.NewCustom(snapconfig, db, trie.NewHashDatabase(db), rootHash, false, false, false, retriever)
+	if err != nil {
+		return nil, err // The relevant snapshot(s) might not exist
+	}
+	// Sanitize the bloom filter size if it's too small.
+	if config.BloomSize < 256 {
+		log.Warn("Sanitizing bloomfilter size", "provided(MB)", config.BloomSize, "updated(MB)", 256)
+		config.BloomSize = 256
+	}
+	stateBloom, err := newStateBloomWithSize(config.BloomSize)
+	if err != nil {
+		return nil, err
+	}
+	return &Pruner{
+		config:     config,
+		db:         db,
+		stateBloom: stateBloom,
+		snaptree:   snaptree,
+		rootHash:   rootHash,
 	}, nil
 }
 

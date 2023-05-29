@@ -21,14 +21,20 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"math/big"
 )
 
 // Config are the configuration options for the Interpreter
 type Config struct {
-	Tracer                  EVMLogger // Opcode logger
-	NoBaseFee               bool      // Forces the EIP-1559 baseFee to 0 (needed for 0 price calls)
-	EnablePreimageRecording bool      // Enables recording of SHA3/keccak preimages
-	ExtraEips               []int     // Additional EIPS that are to be enabled
+	Tracer                  EVMLogger        // Opcode logger
+	ContractVerifier        ContractVerifier // evm operation testdata
+	NoBaseFee               bool             // Forces the EIP-1559 baseFee to 0 (needed for 0 price calls)
+	EnablePreimageRecording bool             // Enables recording of SHA3/keccak preimages
+	ExtraEips               []int            // Additional EIPS that are to be enabled
+}
+
+type ContractVerifier interface {
+	Verify(stateDB StateDB, op OpCode, from, to common.Address, input []byte, value *big.Int) error
 }
 
 // ScopeContext contains the things that are per-call, such as stack and memory,
