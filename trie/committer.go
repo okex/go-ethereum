@@ -315,6 +315,10 @@ func (c *committer) store(path []byte, n node) node {
 	)
 	// Collect the dirty node to nodeset for return.
 	c.nodes.add(string(path), mnode)
+	if fmt.Sprintf("%x", nhash.Bytes()) == "b3f7320c2d56c831857ba456fa234d282e1f395666d80414999181b3fd49b478" {
+		fmt.Println("commit-store==================")
+		mustDecodeNodeUnsafe(nhash.Bytes(), nodeToBytes(mnode.node))
+	}
 
 	// Collect the corresponding leaf node if it's required. We don't check
 	// full node since it's impossible to store value in fullNode. The key
