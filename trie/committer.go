@@ -17,7 +17,9 @@
 package trie
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/trie/trienode"
@@ -46,6 +48,7 @@ func newCommitter(nodeset *NodeSet, tracer *tracer, collectLeaf bool) *committer
 		nodes:       nodeset,
 		tracer:      tracer,
 		collectLeaf: collectLeaf,
+		saveNode:    map[string][]byte{},
 	}
 }
 
@@ -148,6 +151,14 @@ func (c *committer) commit(path []byte, n node) node {
 		// The key needs to be copied, since we're adding it to the
 		// modified nodeset.
 		collapsed.Key = hexToCompact(cn.Key)
+
+		// for dds producer
+		var w bytes.Buffer
+		if err := rlp.Encode(&w, collapsed); err != nil {
+			panic("encode error: " + err.Error())
+		}
+		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
+
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn
@@ -157,6 +168,13 @@ func (c *committer) commit(path []byte, n node) node {
 		hashedKids := c.commitChildren(path, cn)
 		collapsed := cn.copy()
 		collapsed.Children = hashedKids
+
+		// for dds producer
+		var w bytes.Buffer
+		if err := collapsed.EncodeRLP(&w); err != nil {
+			panic("encode error: " + err.Error())
+		}
+		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
 
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
