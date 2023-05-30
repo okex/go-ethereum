@@ -213,6 +213,12 @@ func (t *StateTrie) GetKey(shaKey []byte) []byte {
 // Once the trie is committed, it's not usable anymore. A new trie must
 // be created with new root and updated trie database for following usage
 func (t *StateTrie) Commit(collectLeaf bool) (common.Hash, *NodeSet) {
+	t.preCommit()
+	// Commit the trie and return its modified nodeset.
+	return t.trie.Commit(collectLeaf)
+}
+
+func (t *StateTrie) preCommit() {
 	// Write all the pre-images to the actual disk database
 	if len(t.getSecKeyCache()) > 0 {
 		if t.preimages != nil {
@@ -224,8 +230,17 @@ func (t *StateTrie) Commit(collectLeaf bool) (common.Hash, *NodeSet) {
 		}
 		t.secKeyCache = make(map[string][]byte)
 	}
-	// Commit the trie and return its modified nodeset.
-	return t.trie.Commit(collectLeaf)
+}
+
+func (t *StateTrie) CommitForDelta(collectLeaf bool) (common.Hash, *NodeSet, []*NodeDelta, error) {
+	t.preCommit()
+	return t.trie.CommitForDelta(collectLeaf)
+}
+
+func (t *StateTrie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (common.Hash, *NodeSet, error) {
+	t.preCommit()
+	// Commit the trie to its intermediate node database
+	return t.trie.CommitWithDelta(inputDelta, collectLeaf)
 }
 
 // Hash returns the root hash of StateTrie. It does not write to the

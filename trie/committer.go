@@ -36,6 +36,8 @@ type committer struct {
 	nodes       *NodeSet
 	tracer      *tracer
 	collectLeaf bool
+
+	saveNode map[string][]byte
 }
 
 // newCommitter creates a new committer or picks one from the pool.
@@ -47,9 +49,82 @@ func newCommitter(nodeset *NodeSet, tracer *tracer, collectLeaf bool) *committer
 	}
 }
 
+func (c *committer) SetDelta(delta []*NodeDelta) *committer {
+	for _, d := range delta {
+		c.saveNode[d.Key] = d.Val
+	}
+
+	return c
+}
+
+func (c *committer) GetDelta() []*NodeDelta {
+	delta := make([]*NodeDelta, 0, len(c.saveNode))
+	for k, v := range c.saveNode {
+		delta = append(delta, &NodeDelta{k, v})
+	}
+	return delta
+}
+
 // Commit collapses a node down into a hash node.
 func (c *committer) Commit(n node) hashNode {
-	return c.commit(nil, n).(hashNode)
+	var h hashNode
+	if len(c.saveNode) > 0 {
+		rootHash := c.saveNode["root"]
+		h = c.commitWithDelta(nil, rootHash).(hashNode)
+	} else {
+		switch cn := n.(type) {
+		case *shortNode:
+			c.saveNode["root"] = cn.flags.hash
+		case *fullNode:
+			c.saveNode["root"] = cn.flags.hash
+		case hashNode:
+			c.saveNode["root"] = cn
+		default:
+			// nil, valuenode shouldn't be committed
+			panic(fmt.Sprintf("%T: invalid node: %v", n, n))
+		}
+		h = c.commit(nil, n).(hashNode)
+	}
+	return h
+}
+
+func (c *committer) commitWithDelta(path, nodeHash []byte) node {
+	if c.saveNode[string(nodeHash)] == nil {
+		var hn hashNode = nodeHash
+		return hn
+	}
+	n := mustDecodeNode(nodeHash, c.saveNode[string(nodeHash)])
+	// Commit children, then parent, and remove remove the dirty flag.
+	switch cn := n.(type) {
+	case *shortNode:
+		// If the child is fullnode, recursively commit.
+		// Otherwise it can only be hashNode or valueNode.
+		if h, ok := cn.Val.(*hashNode); ok {
+			c.commitWithDelta(append(path, cn.Key...), *h)
+		} else if h, ok := cn.Val.(hashNode); ok {
+			c.commitWithDelta(append(path, cn.Key...), h)
+		}
+		// The key needs to be copied, since we're delivering it to database
+		cn.Key = hexToCompact(cn.Key)
+		hashedNode := c.store(path, cn)
+		if hn, ok := hashedNode.(hashNode); ok {
+			return hn
+		}
+		return cn
+	case *fullNode:
+		c.commitChildrenWithDelta(path, cn)
+
+		hashedNode := c.store(path, cn)
+		if hn, ok := hashedNode.(hashNode); ok {
+			return hn
+		}
+		return cn
+	case hashNode:
+		return cn
+	default:
+		// nil, valuenode shouldn't be committed
+		panic(fmt.Sprintf("%T: invalid node: %v", n, n))
+	}
 }
 
 // commit collapses a node down into a hash node and returns it.
@@ -93,6 +168,23 @@ func (c *committer) commit(path []byte, n node) node {
 	default:
 		// nil, valuenode shouldn't be committed
 		panic(fmt.Sprintf("%T: invalid node: %v", n, n))
+	}
+}
+
+func (c *committer) commitChildrenWithDelta(path []byte, n *fullNode) {
+	for i := 0; i < 16; i++ {
+		child := n.Children[i]
+		if child == nil {
+			continue
+		}
+		// If it's the hashed child, save the hash value directly.
+		// Note: it's impossible that the child in range [0, 15]
+		// is a valuenode.
+		if hn, ok := child.(*hashNode); ok {
+			c.commitWithDelta(append(path, byte(i)), *hn)
+		} else if hn, ok := child.(hashNode); ok {
+			c.commitWithDelta(append(path, byte(i)), hn)
+		}
 	}
 }
 

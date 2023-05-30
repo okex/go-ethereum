@@ -171,6 +171,20 @@ func (t *odrTrie) Commit(collectLeaf bool) (common.Hash, *trie.NodeSet) {
 	return t.trie.Commit(collectLeaf)
 }
 
+func (t *odrTrie) CommitForDelta(collectLeaf bool) (common.Hash, *trie.NodeSet, []*trie.NodeDelta, error) {
+	if t.trie == nil {
+		return t.id.Root, nil, nil, nil
+	}
+	return t.trie.CommitForDelta(collectLeaf)
+}
+
+func (t *odrTrie) CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, error) {
+	if t.trie == nil {
+		return t.id.Root, nil, nil
+	}
+	return t.trie.CommitWithDelta(inputDelta, collectLeaf)
+}
+
 func (t *odrTrie) Hash() common.Hash {
 	if t.trie == nil {
 		return t.id.Root

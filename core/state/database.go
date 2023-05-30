@@ -110,6 +110,8 @@ type Trie interface {
 	// Once the trie is committed, it's not usable anymore. A new trie must
 	// be created with new root and updated trie database for following usage
 	Commit(collectLeaf bool) (common.Hash, *trie.NodeSet)
+	CommitForDelta(collectLeaf bool) (common.Hash, *trie.NodeSet, []*trie.NodeDelta, error)
+	CommitWithDelta(inputDelta []*trie.NodeDelta, collectLeaf bool) (common.Hash, *trie.NodeSet, error)
 
 	// NodeIterator returns an iterator that returns nodes of the trie. Iteration
 	// starts at the key after the given start key.
