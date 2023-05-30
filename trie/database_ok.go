@@ -40,6 +40,10 @@ func (db *Database) UpdateForOK(nodes *MergedNodeSet, accRetrieval func([]byte) 
 			if !ok {
 				return fmt.Errorf("missing node %x %v", owner, path)
 			}
+			if fmt.Sprintf("%x", n.hash.Bytes()) == "b3f7320c2d56c831857ba456fa234d282e1f395666d80414999181b3fd49b478" {
+				fmt.Println("to insert==================")
+				nodeToBytes(n.node)
+			}
 			db.insert(n.hash, int(n.size), n.node)
 		}
 	}
