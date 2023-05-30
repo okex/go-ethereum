@@ -66,9 +66,9 @@ var (
 // Pruner is an offline tool to prune the stale state with the
 // help of the snapshot. The workflow of pruner is very simple:
 //
-// - iterate the snapshot, reconstruct the relevant state
-// - iterate the database, delete all other state entries which
-//   don't belong to the target state and the genesis state
+//   - iterate the snapshot, reconstruct the relevant state
+//   - iterate the database, delete all other state entries which
+//     don't belong to the target state and the genesis state
 //
 // It can take several hours(around 2 hours for mainnet) to finish
 // the whole pruning work. It's recommended to run this offline tool
@@ -81,6 +81,8 @@ type Pruner struct {
 	trieCachePath string
 	headHeader    *types.Header
 	snaptree      *snapshot.Tree
+
+	rootHash common.Hash
 }
 
 // NewPruner creates the pruner instance.
@@ -109,6 +111,30 @@ func NewPruner(db ethdb.Database, datadir, trieCachePath string, bloomSize uint6
 		trieCachePath: trieCachePath,
 		headHeader:    headBlock.Header(),
 		snaptree:      snaptree,
+	}, nil
+}
+
+func NewPrunerCustom(db ethdb.Database, datadir, trieCachePath string, bloomSize uint64, rootHash common.Hash, retriever snapshot.Retriever) (*Pruner, error) {
+	snaptree, err := snapshot.NewCustom(db, trie.NewDatabase(db), 256, rootHash, false, false, false, retriever)
+	if err != nil {
+		return nil, err // The relevant snapshot(s) might not exist
+	}
+	// Sanitize the bloom filter size if it's too small.
+	if bloomSize < 256 {
+		log.Warn("Sanitizing bloomfilter size", "provided(MB)", bloomSize, "updated(MB)", 256)
+		bloomSize = 256
+	}
+	stateBloom, err := newStateBloomWithSize(bloomSize)
+	if err != nil {
+		return nil, err
+	}
+	return &Pruner{
+		db:            db,
+		stateBloom:    stateBloom,
+		datadir:       datadir,
+		trieCachePath: trieCachePath,
+		snaptree:      snaptree,
+		rootHash:      rootHash,
 	}, nil
 }
 
@@ -322,9 +348,9 @@ func (p *Pruner) Prune(root common.Hash) error {
 	}
 	// Traverse the genesis, put all genesis state entries into the
 	// bloom filter too.
-	if err := extractGenesis(p.db, p.stateBloom); err != nil {
-		return err
-	}
+	//	if err := extractGenesis(p.db, p.stateBloom); err != nil {
+	//		return err
+	//	}
 	filterName := bloomFilterName(p.datadir, root)
 
 	log.Info("Writing state bloom to disk", "name", filterName)

@@ -166,6 +166,8 @@ type Tree struct {
 
 	// Test hooks
 	onFlatten func() // Hook invoked when the bottom most diff layers are flattened
+
+	Retriever
 }
 
 // New attempts to load an already existing snapshot from a persistent key-value
@@ -179,10 +181,10 @@ type Tree struct {
 // If the memory layers in the journal do not match the disk layer (e.g. there is
 // a gap) or the journal is missing, there are two repair cases:
 //
-// - if the 'recovery' parameter is true, all memory diff-layers will be discarded.
-//   This case happens when the snapshot is 'ahead' of the state trie.
-// - otherwise, the entire snapshot is considered invalid and will be recreated on
-//   a background thread.
+//   - if the 'recovery' parameter is true, all memory diff-layers will be discarded.
+//     This case happens when the snapshot is 'ahead' of the state trie.
+//   - otherwise, the entire snapshot is considered invalid and will be recreated on
+//     a background thread.
 func New(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, async bool, rebuild bool, recovery bool) (*Tree, error) {
 	// Create a new, empty snapshot tree
 	snap := &Tree{
@@ -372,7 +374,8 @@ func (t *Tree) Cap(root common.Hash, layers int) error {
 	}
 	diff, ok := snap.(*diffLayer)
 	if !ok {
-		return fmt.Errorf("snapshot [%#x] is disk layer", root)
+		// return fmt.Errorf("snapshot [%#x] is disk layer", root)
+		return nil
 	}
 	// If the generator is still running, use a more aggressive cap
 	diff.origin.lock.RLock()
@@ -727,7 +730,8 @@ func (t *Tree) Rebuild(root common.Hash) {
 	// generator will run a wiper first if there's not one running right now.
 	log.Info("Rebuilding state snapshot")
 	t.layers = map[common.Hash]snapshot{
-		root: generateSnapshot(t.diskdb, t.triedb, t.cache, root),
+		// root: generateSnapshot(t.diskdb, t.triedb, t.cache, root),
+		root: generateSnapshotCustom(t.diskdb, t.triedb, t.cache, root, t.Retriever),
 	}
 }
 

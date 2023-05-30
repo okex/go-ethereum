@@ -618,23 +618,6 @@ func (t *Trie) Commit(collectLeaf bool) (common.Hash, *NodeSet, error) {
 func (t *Trie) CommitWithDelta(inputDelta []*NodeDelta, collectLeaf bool) (common.Hash, *NodeSet, error) {
 	defer t.tracer.reset()
 
-	if t.root == nil {
-		return emptyRoot, nil, nil
-	}
-	/*
-		// Derive the hash for all dirty nodes first. We hold the assumption
-		// in the following procedure that all nodes are hashed.
-		rootHash := t.Hash()
-
-		// Do a quick check if we really need to commit. This can happen e.g.
-		// if we load a trie for reading storage values, but don't write to it.
-		if hashedNode, dirty := t.root.cache(); !dirty {
-			// Replace the root node with the origin hash in order to
-			// ensure all resolved nodes are dropped after the commit.
-			t.root = hashedNode
-			return rootHash, nil, nil
-		}
-	*/
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
 	h := newCommitter(t.owner, collectLeaf)
