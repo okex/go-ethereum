@@ -13,7 +13,7 @@ func (db *Database) UpdateForOK(nodes *MergedNodeSet, accRetrieval func([]byte) 
 		fmt.Printf("======set-k:%x\n", k)
 		for k, v := range v.nodes {
 			fmt.Printf("node-k:%x\nnodeHash:%x\n", k, v.hash)
-			nodeToBytes(v.node)
+			mustDecodeNodeUnsafe(v.hash.Bytes(), nodeToBytes(v.node))
 		}
 	}
 
@@ -42,7 +42,7 @@ func (db *Database) UpdateForOK(nodes *MergedNodeSet, accRetrieval func([]byte) 
 			}
 			if fmt.Sprintf("%x", n.hash.Bytes()) == "b3f7320c2d56c831857ba456fa234d282e1f395666d80414999181b3fd49b478" {
 				fmt.Println("to insert==================")
-				nodeToBytes(n.node)
+				mustDecodeNodeUnsafe(n.hash.Bytes(), nodeToBytes(n.node))
 			}
 			db.insert(n.hash, int(n.size), n.node)
 		}
