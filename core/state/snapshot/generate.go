@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
@@ -572,11 +571,14 @@ func generateAccounts(ctx *generatorContext, dl *diskLayer, accMarker []byte) er
 			return nil
 		}
 		// Retrieve the current account and flatten it into the internal format
+		//var acc struct {
+		//	Nonce    uint64
+		//	Balance  *big.Int
+		//	Root     common.Hash
+		//	CodeHash []byte
+		//}
 		var acc struct {
-			Nonce    uint64
-			Balance  *big.Int
-			Root     common.Hash
-			CodeHash []byte
+			Root common.Hash
 		}
 		if err := rlp.DecodeBytes(val, &acc); err != nil {
 			log.Crit("Invalid account encountered during snapshot creation", "err", err)
@@ -585,15 +587,16 @@ func generateAccounts(ctx *generatorContext, dl *diskLayer, accMarker []byte) er
 		if accMarker == nil || !bytes.Equal(account[:], accMarker) {
 			dataLen := len(val) // Approximate size, saves us a round of RLP-encoding
 			if !write {
-				if bytes.Equal(acc.CodeHash, types.EmptyCodeHash[:]) {
-					dataLen -= 32
-				}
-				if acc.Root == types.EmptyRootHash {
-					dataLen -= 32
-				}
+				//if bytes.Equal(acc.CodeHash, types.EmptyCodeHash[:]) {
+				//	dataLen -= 32
+				//}
+				//if acc.Root == types.EmptyRootHash {
+				//	dataLen -= 32
+				//}
 				snapRecoveredAccountMeter.Mark(1)
 			} else {
-				data := SlimAccountRLP(acc.Nonce, acc.Balance, acc.Root, acc.CodeHash)
+				//data := SlimAccountRLP(acc.Nonce, acc.Balance, acc.Root, acc.CodeHash)
+				data := val
 				dataLen = len(data)
 				rawdb.WriteAccountSnapshot(ctx.batch, account, data)
 				snapGeneratedAccountMeter.Mark(1)
@@ -615,7 +618,7 @@ func generateAccounts(ctx *generatorContext, dl *diskLayer, accMarker []byte) er
 
 		// If the iterated account is the contract, create a further loop to
 		// verify or regenerate the contract storage.
-		if acc.Root == types.EmptyRootHash {
+		if acc.Root == types.EmptyRootHash || acc.Root == zeroRoot {
 			ctx.removeStorageAt(account)
 		} else {
 			var storeMarker []byte
@@ -639,7 +642,8 @@ func generateAccounts(ctx *generatorContext, dl *diskLayer, accMarker []byte) er
 	origin := common.CopyBytes(accMarker)
 	for {
 		id := trie.StateTrieID(dl.root)
-		exhausted, last, err := dl.generateRange(ctx, id, rawdb.SnapshotAccountPrefix, snapAccount, origin, accountRange, onAccount, FullAccountRLP)
+		//exhausted, last, err := dl.generateRange(ctx, id, rawdb.SnapshotAccountPrefix, snapAccount, origin, accountRange, onAccount, FullAccountRLP)
+		exhausted, last, err := dl.generateRange(ctx, id, rawdb.SnapshotAccountPrefix, snapAccount, origin, accountRange, onAccount, nil)
 		if err != nil {
 			return err // The procedure it aborted, either by external signal or internal error.
 		}

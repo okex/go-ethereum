@@ -383,7 +383,8 @@ func (t *Tree) Cap(root common.Hash, layers int) error {
 	}
 	diff, ok := snap.(*diffLayer)
 	if !ok {
-		return fmt.Errorf("snapshot [%#x] is disk layer", root)
+		//return fmt.Errorf("snapshot [%#x] is disk layer", root)
+		return nil
 	}
 	// If the generator is still running, use a more aggressive cap
 	diff.origin.lock.RLock()
@@ -738,7 +739,8 @@ func (t *Tree) Rebuild(root common.Hash) {
 	// generator will run a wiper first if there's not one running right now.
 	log.Info("Rebuilding state snapshot")
 	t.layers = map[common.Hash]snapshot{
-		root: generateSnapshot(t.diskdb, t.triedb, t.config.CacheSize, root),
+		//root: generateSnapshot(t.diskdb, t.triedb, t.config.CacheSize, root),
+		root: generateSnapshotCustom(t.diskdb, t.triedb, t.config.CacheSize, root, t.Retriever),
 	}
 }
 

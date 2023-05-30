@@ -75,6 +75,8 @@ type Database struct {
 	cleans    *fastcache.Cache // Megabytes permitted using for read caches
 	preimages *preimageStore   // The store for caching preimages
 	backend   nodeBackend      // The backend for managing trie nodes
+
+	statistics *RuntimeState // The runtime statistics
 }
 
 // prepare initializes the database with provided configs, but the
@@ -97,6 +99,8 @@ func prepare(diskdb ethdb.Database, config *Config) *Database {
 		diskdb:    diskdb,
 		cleans:    cleans,
 		preimages: preimages,
+
+		statistics: NewRuntimeState(),
 	}
 }
 
