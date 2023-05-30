@@ -194,7 +194,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 			panic("encode error: " + err.Error())
 		}
 		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
-		fmt.Printf("nodeHash:%x, type:sn\n", string(collapsed.flags.hash))
+		//fmt.Printf("nodeHash:%x, type:sn\n", string(collapsed.flags.hash))
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn, nil
@@ -215,7 +215,7 @@ func (c *committer) commit(path []byte, n node) (node, error) {
 			panic("encode error: " + err.Error())
 		}
 		c.saveNode[string(collapsed.flags.hash)] = w.Bytes()
-		fmt.Printf("nodeHash:%x, type:fn\n", string(collapsed.flags.hash))
+		//fmt.Printf("nodeHash:%x, type:fn\n", string(collapsed.flags.hash))
 		hashedNode := c.store(path, collapsed)
 		if hn, ok := hashedNode.(hashNode); ok {
 			return hn, nil

@@ -333,6 +333,9 @@ func (db *Database) insert(hash common.Hash, size int, node node) {
 		}
 	})
 	db.dirties[hash] = entry
+	if fmt.Sprintf("%x", hash.Bytes()) == "b3f7320c2d56c831857ba456fa234d282e1f395666d80414999181b3fd49b478" {
+		mustDecodeNodeUnsafe(hash.Bytes(), entry.rlp())
+	}
 
 	// Update the flush-list endpoints
 	if db.oldest == (common.Hash{}) {

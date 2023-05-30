@@ -9,12 +9,12 @@ func (db *Database) UpdateForOK(nodes *MergedNodeSet, accRetrieval func([]byte) 
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
-	//for k, v := range nodes.sets {
-	//	fmt.Printf("======set-k:%x\n", k)
-	//	for k, v := range v.nodes {
-	//		fmt.Printf("node-k:%x\nnodeHash:%x\n", k, v.hash)
-	//	}
-	//}
+	for k, v := range nodes.sets {
+		fmt.Printf("======set-k:%x\n", k)
+		for k, v := range v.nodes {
+			fmt.Printf("node-k:%x\nnodeHash:%x\n", k, v.hash)
+		}
+	}
 
 	// Insert dirty nodes into the database. In the same tree, it must be
 	// ensured that children are inserted first, then parent so that children
