@@ -13,6 +13,7 @@ func (db *Database) UpdateForOK(nodes *MergedNodeSet, accRetrieval func([]byte) 
 		fmt.Printf("======set-k:%x\n", k)
 		for k, v := range v.nodes {
 			fmt.Printf("node-k:%x\nnodeHash:%x\n", k, v.hash)
+			nodeToBytes(v.node)
 		}
 	}
 
