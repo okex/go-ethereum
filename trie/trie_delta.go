@@ -10,6 +10,8 @@ type MptDeltaMap map[string]*MptDelta
 type MptDelta struct {
 	SetKV []*DeltaKV `json:"set_kv"`
 	DelKV []*DeltaKV `json:"del_kv"`
+
+	CodeKV []*DeltaKV `json:"code_kv"`
 }
 
 func NewMptDelta() *MptDelta {
