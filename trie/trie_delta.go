@@ -8,8 +8,22 @@ import (
 type MptDeltaMap map[string]*MptDelta
 
 type MptDelta struct {
-	NodeDelta []*NodeDelta    `json:"node_delta"`
-	Storage   []*StorageDelta `json:"storage"`
+	SetKV []*DeltaKV `json:"set_kv"`
+	DelKV []*DeltaKV `json:"del_kv"`
+
+	CodeKV []*DeltaKV `json:"code_kv"`
+}
+
+func NewMptDelta() *MptDelta {
+	return &MptDelta{
+		SetKV: make([]*DeltaKV, 0),
+		DelKV: make([]*DeltaKV, 0),
+	}
+}
+
+type DeltaKV struct {
+	Key []byte `json:"key"`
+	Val []byte `json:"val"`
 }
 
 type StorageDelta struct {
