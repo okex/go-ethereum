@@ -33,10 +33,12 @@ import (
 )
 
 var (
-	baseDir            = filepath.Join(".", "testdata")
-	blockTestDir       = filepath.Join(baseDir, "BlockchainTests")
-	stateTestDir       = filepath.Join(baseDir, "GeneralStateTests")
-	legacyStateTestDir = filepath.Join(baseDir, "LegacyTests", "Constantinople", "GeneralStateTests")
+	// baseDir            = filepath.Join(".", "testdata")
+	baseDir      = "/Users/oker/workspace/tests"
+	blockTestDir = filepath.Join(baseDir, "BlockchainTests")
+	stateTestDir = filepath.Join(baseDir, "GeneralStateTests")
+	// stateTestDir = filepath.Join(baseDir, "GeneralStateTests_Debug")
+	// legacyStateTestDir = filepath.Join(baseDir, "LegacyTests", "Constantinople", "GeneralStateTests")
 	transactionTestDir = filepath.Join(baseDir, "TransactionTests")
 	rlpTestDir         = filepath.Join(baseDir, "RLPTests")
 	difficultyTestDir  = filepath.Join(baseDir, "BasicTests")
@@ -116,6 +118,7 @@ func (tm *testMatcher) skipLoad(pattern string) {
 }
 
 // fails adds an expected failure for tests matching the pattern.
+//
 //nolint:unused
 func (tm *testMatcher) fails(pattern string, reason string) {
 	if reason == "" {
@@ -222,7 +225,8 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 			t.Skip("Skipped by runonly")
 		}
 	}
-	t.Parallel()
+
+	// 	t.Parallel()
 
 	// Load the file as map[string]<testType>.
 	m := makeMapFromTestFunc(runTest)

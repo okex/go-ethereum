@@ -9,7 +9,7 @@ import (
 
 var (
 	//cmBridgeContractAddress is 0x0000000000000000000000000000000000000100
-	cmBridgeContractAddress = common.BytesToAddress([]byte{0x01, 0x00})
+	cmBridgeContractAddress = common.BytesToAddress([]byte{0xff, 0xff, 0xff})
 )
 
 type CallToWasmByPrecompile func(ctx OKContext, caller, to common.Address, value *big.Int, input []byte, remainGas uint64) ([]byte, uint64, error)

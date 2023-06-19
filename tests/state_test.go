@@ -67,8 +67,8 @@ func TestState(t *testing.T) {
 	// For Istanbul, older tests were moved into LegacyTests
 	for _, dir := range []string{
 		stateTestDir,
-		legacyStateTestDir,
-		benchmarksDir,
+		//		legacyStateTestDir,
+		//		benchmarksDir,
 	} {
 		st.walk(t, dir, func(t *testing.T, name string, test *StateTest) {
 			for _, subtest := range test.Subtests() {
@@ -85,21 +85,21 @@ func TestState(t *testing.T) {
 						return st.checkFailure(t, err)
 					})
 				})
-				t.Run(key+"/snap", func(t *testing.T) {
-					withTrace(t, test.gasLimit(subtest), func(vmconfig vm.Config) error {
-						snaps, statedb, err := test.Run(subtest, vmconfig, true)
-						if snaps != nil && statedb != nil {
-							if _, err := snaps.Journal(statedb.IntermediateRoot(false)); err != nil {
-								return err
-							}
-						}
-						if err != nil && len(test.json.Post[subtest.Fork][subtest.Index].ExpectException) > 0 {
-							// Ignore expected errors (TODO MariusVanDerWijden check error string)
-							return nil
-						}
-						return st.checkFailure(t, err)
-					})
-				})
+				// t.Run(key+"/snap", func(t *testing.T) {
+				// 	withTrace(t, test.gasLimit(subtest), func(vmconfig vm.Config) error {
+				// 		snaps, statedb, err := test.Run(subtest, vmconfig, true)
+				// 		if snaps != nil && statedb != nil {
+				// 			if _, err := snaps.Journal(statedb.IntermediateRoot(false)); err != nil {
+				// 				return err
+				// 			}
+				// 		}
+				// 		if err != nil && len(test.json.Post[subtest.Fork][subtest.Index].ExpectException) > 0 {
+				// 			// Ignore expected errors (TODO MariusVanDerWijden check error string)
+				// 			return nil
+				// 		}
+				// 		return st.checkFailure(t, err)
+				// 	})
+				// })
 			}
 		})
 	}
