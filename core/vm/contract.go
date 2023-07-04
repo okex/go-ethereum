@@ -165,12 +165,12 @@ func (c *Contract) Caller() common.Address {
 }
 
 // UseGas attempts the use gas and subtracts it and returns true on success
-func (c *Contract) UseGas(gas uint64) (ok bool) {
+func (c *Contract) UseGas(gas uint64, pos int) (ok bool) {
 	if c.Gas < gas {
 		return false
 	}
 	c.Gas -= gas
-	log.Printf("giskook UseGas %v\n", gas)
+	log.Printf("giskook UseGas pos%v:%v\n", pos, gas)
 	return true
 }
 
