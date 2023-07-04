@@ -17,7 +17,6 @@
 package vm
 
 import (
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -171,7 +170,7 @@ func (c *Contract) UseGas(gas uint64, pos int) (ok bool) {
 	}
 	c.Gas -= gas
 	if gas > 30000 {
-		log.Printf("giskook UseGas pos%v:%v\n", pos, gas)
+		// log.Printf("giskook UseGas pos%v:%v\n", pos, gas)
 	}
 	return true
 }
