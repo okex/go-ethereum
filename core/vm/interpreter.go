@@ -247,7 +247,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			dynamicCost, err = operation.dynamicGas(in.evm, contract, stack, mem, memorySize)
 			cost += dynamicCost // total cost, for debug tracing
 			if dynamicCost > 30000 {
-				stdlog.Printf("giskook %v\n", operation)
+				stdlog.Printf("giskook op %v %v\n", op, operation)
 			}
 			if err != nil || !contract.UseGas(dynamicCost, 6) {
 				return nil, ErrOutOfGas
