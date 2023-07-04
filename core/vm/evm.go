@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"log"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -228,6 +229,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
 			ret, err = evm.interpreter.Run(contract, input, false)
+			log.Printf("giskook evm gas %v\n", gas)
 			gas = contract.Gas
 		}
 	}
@@ -243,6 +245,8 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		//} else {
 		//	evm.StateDB.DiscardSnapshot(snapshot)
 	}
+	log.Printf("giskook evm gas return %v\n", gas)
+
 	return ret, gas, err
 }
 
