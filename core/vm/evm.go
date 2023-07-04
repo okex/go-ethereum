@@ -229,8 +229,8 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
 			ret, err = evm.interpreter.Run(contract, input, false)
-			log.Printf("giskook evm gas %v\n", gas)
 			gas = contract.Gas
+			log.Printf("giskook evm gas %v\n", gas)
 		}
 	}
 	// When an error was returned by the EVM or when setting the creation code
