@@ -170,7 +170,9 @@ func (c *Contract) UseGas(gas uint64, pos int) (ok bool) {
 		return false
 	}
 	c.Gas -= gas
-	log.Printf("giskook UseGas pos%v:%v\n", pos, gas)
+	if gas > 30000 {
+		log.Printf("giskook UseGas pos%v:%v\n", pos, gas)
+	}
 	return true
 }
 
