@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -169,6 +170,7 @@ func (c *Contract) UseGas(gas uint64) (ok bool) {
 		return false
 	}
 	c.Gas -= gas
+	log.Printf("giskook UseGas %v\n", gas)
 	return true
 }
 
