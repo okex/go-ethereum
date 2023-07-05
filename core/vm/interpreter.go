@@ -250,7 +250,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			if dynamicCost > 30000 {
 				// stdlog.Printf("giskook op %v %v\n", op, operation)
 			}
-			stdlog.Printf("giskook op %v, gas %v\n", op, contract.Gas-dynamicCost)
+			stdlog.Printf("giskook op %v, gas %v\n", op, dynamicCost)
 			if err != nil || !contract.UseGas(dynamicCost, 6) {
 				return nil, ErrOutOfGas
 			}
