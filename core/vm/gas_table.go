@@ -406,7 +406,7 @@ func gasDelegateCall(evm *EVM, contract *Contract, stack *Stack, mem *Memory, me
 		return 0, ErrGasUintOverflow
 	}
 
-	log.Printf("giskook op gasDelegateCall :%v\n", gas)
+	log.Printf("giskook op gasDelegateCall :%v\n", evm.callGasTemp)
 	return gas, nil
 }
 
