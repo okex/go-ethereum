@@ -219,7 +219,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 		// Static portion of gas
 		cost = operation.constantGas // For tracing
-		stdlog.Printf("giskook op %v, gas :%v\n", op, operation.constantGas)
+		// stdlog.Printf("giskook op %v, gas :%v\n", op, operation.constantGas)
 		if !contract.UseGas(operation.constantGas, 5) {
 			return nil, ErrOutOfGas
 		}
@@ -253,7 +253,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			if dynamicCost > 30000 {
 				// stdlog.Printf("giskook op %v %v\n", op, operation)
 			}
-			stdlog.Printf("giskook op %v, gas %v\n", op, dynamicCost)
+			// stdlog.Printf("giskook op %v, gas %v\n", op, dynamicCost)
 			if err != nil || !contract.UseGas(dynamicCost, 6) {
 				return nil, ErrOutOfGas
 			}
