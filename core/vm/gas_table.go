@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/params"
-	"log"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so
@@ -50,7 +49,6 @@ func memoryGasCost(mem *Memory, newMemSize uint64) (uint64, error) {
 		fee := newTotalFee - mem.lastGasCost
 		mem.lastGasCost = newTotalFee
 
-		log.Printf("giskook opmemoryGasCost  gas:%v\n", fee)
 		return fee, nil
 	}
 	return 0, nil
@@ -84,7 +82,6 @@ func memoryCopierGas(stackpos int) gasFunc {
 			return 0, ErrGasUintOverflow
 		}
 
-		log.Printf("giskook op memorycopierGas gas:%v\n", gas)
 		return gas, nil
 	}
 }
@@ -218,7 +215,6 @@ func gasSStoreEIP2200(evm *EVM, contract *Contract, stack *Stack, mem *Memory, m
 		}
 	}
 
-	log.Printf("giskook op gasSStoreEIP2200 gas:%v\n", params.SloadGasEIP2200)
 	return params.SloadGasEIP2200, nil // dirty update (2.2)
 }
 
@@ -267,7 +263,6 @@ func gasSha3(evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize
 	if gas, overflow = math.SafeAdd(gas, wordGas); overflow {
 		return 0, ErrGasUintOverflow
 	}
-	log.Printf("giskook op gasSha3 gas:%v\n", gas)
 
 	return gas, nil
 }
@@ -379,7 +374,6 @@ func gasCallCode(evm *EVM, contract *Contract, stack *Stack, mem *Memory, memory
 	if stack.Back(2).Sign() != 0 {
 		gas += params.CallValueTransferGas
 	}
-	log.Printf("giskook op gasCallCode :%v\n", gas)
 	if gas, overflow = math.SafeAdd(gas, memoryGas); overflow {
 		return 0, ErrGasUintOverflow
 	}
@@ -402,7 +396,6 @@ func gasDelegateCall(evm *EVM, contract *Contract, stack *Stack, mem *Memory, me
 	if err != nil {
 		return 0, err
 	}
-	log.Printf("giskook op gasDelegateCall :%v\n", gas)
 	var overflow bool
 	if gas, overflow = math.SafeAdd(gas, evm.callGasTemp); overflow {
 		return 0, ErrGasUintOverflow
@@ -420,7 +413,6 @@ func gasStaticCall(evm *EVM, contract *Contract, stack *Stack, mem *Memory, memo
 	if err != nil {
 		return 0, err
 	}
-	log.Printf("giskook op gasStaticCall :%v\n", gas)
 	var overflow bool
 	if gas, overflow = math.SafeAdd(gas, evm.callGasTemp); overflow {
 		return 0, ErrGasUintOverflow

@@ -18,7 +18,6 @@ package vm
 
 import (
 	"github.com/holiman/uint256"
-	"log"
 )
 
 // Gas costs
@@ -43,7 +42,6 @@ func callGas(isEip150 bool, availableGas, base uint64, callCost *uint256.Int) (u
 		// is smaller than the requested amount. Therefore we return the new gas instead
 		// of returning an error.
 		if !callCost.IsUint64() || gas < callCost.Uint64() {
-			log.Printf("giskook op callGas gas:%v\n", gas)
 			return gas, nil
 		}
 	}
@@ -51,6 +49,5 @@ func callGas(isEip150 bool, availableGas, base uint64, callCost *uint256.Int) (u
 		return 0, ErrGasUintOverflow
 	}
 
-	log.Printf("giskook op callGasCost gas:%v\n", availableGas-callCost.Uint64())
 	return callCost.Uint64(), nil
 }
