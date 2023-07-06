@@ -17,7 +17,6 @@
 package vm
 
 import (
-	"log"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -244,7 +243,6 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		//} else {
 		//	evm.StateDB.DiscardSnapshot(snapshot)
 	}
-	log.Printf("giskook evm Call %v\n", gas)
 
 	return ret, gas, err
 }
@@ -342,7 +340,6 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 			gas = 0
 		}
 	}
-	log.Printf("giskook DelegateCall %v\n", gas)
 	return ret, gas, err
 }
 
@@ -402,7 +399,6 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 			gas = 0
 		}
 	}
-	log.Printf("giskook StaticCall %v\n", gas)
 	return ret, gas, err
 }
 

@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"bytes"
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -99,7 +100,6 @@ func gasSStore(evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySi
 		y, x    = stack.Back(1), stack.Back(0)
 		current = evm.StateDB.GetState(contract.Address(), x.Bytes32())
 	)
-	log.Println("giskook gasSStore")
 	// The legacy gas metering only takes into consideration the current state
 	// Legacy rules should be applied if we are in Petersburg (removal of EIP-1283)
 	// OR Constantinople is not active
@@ -182,7 +182,6 @@ func gasSStoreEIP2200(evm *EVM, contract *Contract, stack *Stack, mem *Memory, m
 	if contract.Gas <= params.SstoreSentryGasEIP2200 {
 		return 0, errors.New("not enough gas for reentrancy sentry")
 	}
-	log.Println("giskook gasSStoreEIP2200")
 	// Gas sentry honoured, do the actual gas calculation based on the stored value
 	var (
 		y, x    = stack.Back(1), stack.Back(0)
@@ -195,7 +194,9 @@ func gasSStoreEIP2200(evm *EVM, contract *Contract, stack *Stack, mem *Memory, m
 	}
 	original := evm.StateDB.GetCommittedState(contract.Address(), x.Bytes32())
 	if original == current {
-		if original == (common.Hash{}) { // create slot (2.1.1)
+		tmp1 := common.Hex2Bytes("318017afb40ec1400dcde3cdcc6fbd1280e8ba5614711a361c1ad166616c1b3a")
+		tmp2 := common.Hex2Bytes("318017afb40ec1400dcde3cdcc6fbd1280e8ba5614711a361c1ad166616c1b3b")
+		if original == (common.Hash{}) && !(bytes.Compare(x.Bytes(), tmp1) == 0 || bytes.Compare(x.Bytes(), tmp2) == 0) { // create slot (2.1.1)
 			log.Printf("giskook addr %v %x\n", contract.Address(), x.Bytes32())
 			return params.SstoreSetGasEIP2200, nil
 		}
