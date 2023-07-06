@@ -18,7 +18,6 @@ package vm
 
 import (
 	"hash"
-	stdlog "log"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -246,7 +245,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		if operation.dynamicGas != nil {
 			var dynamicCost uint64
 			if op == SSTORE {
-				stdlog.Printf("giskook sstore \n")
+				// stdlog.Printf("giskook sstore \n")
 			}
 			dynamicCost, err = operation.dynamicGas(in.evm, contract, stack, mem, memorySize)
 			cost += dynamicCost // total cost, for debug tracing
