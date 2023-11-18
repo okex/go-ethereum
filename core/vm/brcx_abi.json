@@ -1,0 +1,45 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dec",
+        "type": "uint256"
+      }
+    ],
+    "name": "atoiWithDec",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "toLower",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "lowerStr",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
