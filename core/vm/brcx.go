@@ -81,7 +81,7 @@ func DecodeAToIWithDecInput(abi abi.ABI, input []byte) (string, *big.Int, error)
 	if len(unpacked) != 2 {
 		return "", nil, fmt.Errorf("decode precomplie call to wasm input unpack err :  unpack data len expect 2 but got %v", len(unpacked))
 	}
-	wasmAddr, ok := unpacked[0].(string)
+	amt, ok := unpacked[0].(string)
 	if !ok {
 		return "", nil, fmt.Errorf("decode precomplie call : input unpack err : wasmAddr is not type of string")
 	}
@@ -89,7 +89,7 @@ func DecodeAToIWithDecInput(abi abi.ABI, input []byte) (string, *big.Int, error)
 	if !ok {
 		return "", nil, fmt.Errorf("decode precomplie call : input unpack err : calldata is not type of string")
 	}
-	return wasmAddr, dec, nil
+	return amt, dec, nil
 }
 
 func EncodeAToIWithDecOutput(abi abi.ABI, result *big.Int) ([]byte, error) {
@@ -162,7 +162,9 @@ func atoiWithDec(calldata []byte) ([]byte, error) {
 	if dec.Int64() > 18 {
 		return make([]byte, 0), fmt.Errorf("decimals %d too large", dec.Int64())
 	}
-
+	if strings.HasPrefix(amt, ".") || strings.HasSuffix(amt, ".") || strings.Contains(amt, "e") || strings.Contains(amt, "E") || strings.Contains(amt, "+") || strings.Contains(amt, "-") {
+		return make([]byte, 0), fmt.Errorf("invalid number: %s", amt)
+	}
 	amount, err := decimal.NewFromString(amt)
 	if err != nil {
 		return make([]byte, 0), err
