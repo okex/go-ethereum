@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/shopspring/decimal"
@@ -169,8 +170,8 @@ func atoiWithDec(calldata []byte) ([]byte, error) {
 	if err != nil {
 		return make([]byte, 0), err
 	}
-	if int64(amount.Exponent()) > dec.Int64() {
-		return make([]byte, 0), fmt.Errorf("invalid number: %s", amt)
+	if math.Abs(float64(amount.Exponent())) > float64(dec.Int64()) {
+		return make([]byte, 0), fmt.Errorf("amount overflow: %s", amt)
 	}
 
 	resultDec := amount.Shift(int32(dec.Int64()))

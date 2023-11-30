@@ -86,6 +86,13 @@ func TestAToIWithDec(t *testing.T) {
 			expect:  big.NewInt(0),
 			isError: true,
 		},
+		{
+			name:    "error7 ",
+			amt:     "100.000",
+			dec:     big.NewInt(2),
+			expect:  big.NewInt(0),
+			isError: true,
+		},
 	}
 
 	for _, tc := range testCases {
