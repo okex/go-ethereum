@@ -379,8 +379,8 @@ func (ec *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]typ
 }
 
 // FilterLogs executes a filter query.
-func (ec *Client) GetLogsOptimize(ctx context.Context, height uint64) ([]types.Log, error) {
-	var result []types.Log
+func (ec *Client) GetLogsOptimize(ctx context.Context, height uint64) ([][]*types.Log, error) {
+	var result [][]*types.Log
 	err := ec.c.CallContext(ctx, &result, "eth_getLogsOptimize", height)
 	return result, err
 }
