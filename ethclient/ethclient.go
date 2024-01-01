@@ -378,6 +378,13 @@ func (ec *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]typ
 	return result, err
 }
 
+// FilterLogs executes a filter query.
+func (ec *Client) GetLogsOptimize(ctx context.Context, height uint64) ([]types.Log, error) {
+	var result []types.Log
+	err := ec.c.CallContext(ctx, &result, "eth_getLogsOptimize", height)
+	return result, err
+}
+
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
 func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	arg, err := toFilterArg(q)
