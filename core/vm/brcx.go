@@ -6,17 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/shopspring/decimal"
 	"math/big"
 	"strings"
+
+	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/console"
+	"github.com/dop251/goja_nodejs/require"
+	"github.com/shopspring/decimal"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 const (
-	AToIWithDec = "atoiWithDec"
-	ToLower     = "toLower"
+	AToIWithDec             = "atoiWithDec"
+	ToLower                 = "toLower"
+	IsSrc20TickAllCharValid = "isSrc20TickAllCharValid"
 )
+
+const Src20TickMaxLength = 5
 
 var (
 	brcXABI abi.ABI
@@ -130,6 +137,15 @@ func EncodeToLowerOutput(abi abi.ABI, result string) ([]byte, error) {
 	return method.Outputs.PackValues([]interface{}{result})
 }
 
+func EncodeIsSrc20TickAllCharValidOutput(abi abi.ABI, result bool) ([]byte, error) {
+	method, ok := abi.Methods[IsSrc20TickAllCharValid]
+	if !ok {
+		return make([]byte, 0), fmt.Errorf("can not found method for abi")
+	}
+
+	return method.Outputs.PackValues([]interface{}{result})
+}
+
 // atoiwithdec convert to integer from str with decimal
 type brcXContract struct{}
 
@@ -149,6 +165,8 @@ func (c *brcXContract) Run(input []byte) ([]byte, error) {
 		return atoiWithDec(input)
 	case ToLower:
 		return toLower(input)
+	case IsSrc20TickAllCharValid:
+		return isSrc20TickAllCharValid(input)
 	default:
 		return make([]byte, 0), fmt.Errorf("unsupport method: %s", method.Name)
 
@@ -189,4 +207,83 @@ func toLower(calldata []byte) ([]byte, error) {
 	}
 
 	return EncodeToLowerOutput(brcXABI, strings.ToLower(str))
+}
+
+func isSrc20TickAllCharValid(calldata []byte) ([]byte, error) {
+	tick, err := DecodeIsSrc20TickAllCharValidInput(brcXABI, calldata)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	res, err := src20tickAllCharValid(tick)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	return EncodeIsSrc20TickAllCharValidOutput(brcXABI, res)
+}
+
+func src20tickAllCharValid(data string) (bool, error) {
+	input := []rune(data)
+	if len(input) == 0 || len(input) > Src20TickMaxLength {
+		return false, fmt.Errorf("tick length %d invalid", len(data))
+	}
+
+	vm := goja.New()
+	new(require.Registry).Enable(vm)
+	console.Enable(vm)
+
+	script := `
+		function tickAllCharValid(data) {
+			let reEmoji = /\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F/gu;
+			let reCommon = /[\w~!@#$%^&*()_+=<>?]/;
+			reCommon.lastIndex = 0;
+			reEmoji.lastIndex = 0;
+			for (let i = 0; i < data.length; i++) {
+        		var char = data[i];
+				if (reEmoji.test(char) || reCommon.test(char)) {
+				} else {
+					return false;
+				}
+			}
+			return true;
+		}
+	`
+	prog, err := goja.Compile("", script, true)
+	if err != nil {
+		return false, fmt.Errorf("Error compiling the script %v ", err.Error())
+	}
+	_, err = vm.RunProgram(prog)
+
+	var myJSFunc goja.Callable
+	err = vm.ExportTo(vm.Get("tickAllCharValid"), &myJSFunc)
+	if err != nil {
+		fmt.Printf("Error exporting the function %v", err)
+		return false, fmt.Errorf("Error compiling the script %v ", err.Error())
+	}
+
+	res, err := myJSFunc(goja.Undefined(), vm.ToValue(input))
+	if err != nil {
+		return false, fmt.Errorf("error calling function %s", err.Error())
+	}
+	return res.ToBoolean(), nil
+}
+
+func DecodeIsSrc20TickAllCharValidInput(abi abi.ABI, input []byte) (string, error) {
+	if !IsMatchFunction(abi, IsSrc20TickAllCharValid, input) {
+		return "", fmt.Errorf("decode precomplie call : input sginature is not %s", IsSrc20TickAllCharValid)
+	}
+	unpacked, err := DecodeInputParam(abi, IsSrc20TickAllCharValid, input)
+	if err != nil {
+		return "", fmt.Errorf("decode precomplie call : input unpack err :  %s", err)
+	}
+	if len(unpacked) != 1 {
+		return "", fmt.Errorf("decode precomplie call unpack err :  unpack data len expect 1 but got %v", len(unpacked))
+	}
+
+	tick, ok := unpacked[0].(string)
+	if !ok {
+		return "", fmt.Errorf("decode precomplie call : input unpack err : tick is not type of string")
+	}
+	return tick, nil
 }

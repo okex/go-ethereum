@@ -2,10 +2,12 @@ package vm
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 func TestAToIWithDec(t *testing.T) {
@@ -125,4 +127,116 @@ func EncodeAToIWithDecInput(abi abi.ABI, amt string, dec *big.Int) ([]byte, erro
 	}
 	buffer = append(buffer, calldata...)
 	return buffer, nil
+}
+
+func EncodeIsSrc20TickAllCharValidIntput(abi abi.ABI, tick string) ([]byte, error) {
+	method, ok := abi.Methods[IsSrc20TickAllCharValid]
+	if !ok {
+		return nil, fmt.Errorf("method %s is not exist in abi", IsSrc20TickAllCharValid)
+	}
+	buffer := make([]byte, 0)
+	buffer = append(buffer, method.ID...)
+	calldata, err := method.Inputs.Pack(tick)
+	if err != nil {
+		return nil, err
+	}
+	buffer = append(buffer, calldata...)
+	return buffer, nil
+}
+
+func TestIsSrc20TickAllCharValidInput(t *testing.T) {
+	textWithEmoji := "🙂APL"
+	res, err := src20tickAllCharValid(textWithEmoji)
+	require.NoError(t, err)
+	require.Equal(t, true, res)
+
+	testCases := []struct {
+		name    string
+		tick    string
+		expect  bool
+		isError bool
+	}{
+		{
+			name:    "normal1",
+			tick:    "🙂",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal2",
+			tick:    "🙂APL",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal3",
+			tick:    "APL",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal4",
+			tick:    "APLLL",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal5",
+			tick:    "🙂🙂🙂🙂🙂",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal6",
+			tick:    "APL🙂🙂",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "normal7",
+			tick:    "A",
+			expect:  true,
+			isError: false,
+		},
+		{
+			name:    "error1",
+			tick:    "🙂🙂🙂🙂🙂🙂🙂",
+			expect:  true,
+			isError: true,
+		},
+		{
+			name:    "error2",
+			tick:    "AAAAAAA",
+			expect:  true,
+			isError: true,
+		},
+		{
+			name:    "error3",
+			tick:    "AA🙂🙂🙂🙂PP",
+			expect:  true,
+			isError: true,
+		},
+		{
+			name:    "error4",
+			tick:    "🙂🙂🙂🙂PPAA",
+			expect:  true,
+			isError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(tt *testing.T) {
+			calldata, err := EncodeIsSrc20TickAllCharValidIntput(brcXABI, tc.tick)
+			require.NoError(tt, err)
+			result, err := isSrc20TickAllCharValid(calldata)
+			if tc.isError {
+				require.Error(tt, err)
+				tt.Log(err)
+			} else {
+				expect, err := EncodeIsSrc20TickAllCharValidOutput(brcXABI, tc.expect)
+				require.NoError(tt, err)
+				require.Equal(tt, expect, result)
+			}
+		})
+	}
 }
