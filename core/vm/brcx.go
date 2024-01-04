@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/dop251/goja"
@@ -262,27 +260,24 @@ func countDecimalPlaces(callData []byte) ([]byte, error) {
 	return EncodeCountDecimalPlacesOutput(brcXABI, dec)
 }
 
-func countDec(rawNum string) (int64, error) {
-
-	num, err := strconv.ParseFloat(rawNum, 64)
-	if err != nil {
-		return -1, err
+func countDec(strNumber string) (uint8, error) {
+	dotIndex := strings.Index(strNumber, ".")
+	if dotIndex == -1 {
+		return 0, nil
 	}
-
-	strNum := strconv.FormatFloat(num, 'f', -1, 64)
-
-	regex := regexp.MustCompile(`\.\d+`)
-	matches := regex.FindStringSubmatch(strNum)
-
-	if len(matches) == 1 {
-		decimalPlaces := len(matches[0]) - 1
-		return int64(decimalPlaces), nil
+	decimalPart := strNumber[dotIndex+1:]
+	res := len(decimalPart)
+	for i := len(decimalPart) - 1; i >= 0; i-- {
+		if decimalPart[i] == '0' {
+			res--
+		} else {
+			break
+		}
 	}
-
-	return 0, nil
+	return uint8(res), nil
 }
 
-func EncodeCountDecimalPlacesOutput(abi abi.ABI, dec int64) ([]byte, error) {
+func EncodeCountDecimalPlacesOutput(abi abi.ABI, dec uint8) ([]byte, error) {
 	method, ok := abi.Methods[CountDecimalPlaces]
 	if !ok {
 		return make([]byte, 0), fmt.Errorf("can not found method for abi")

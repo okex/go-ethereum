@@ -255,7 +255,7 @@ func TestCountDecimalPlacesInput(t *testing.T) {
 	testCases := []struct {
 		name    string
 		num     string
-		expect  int64
+		expect  uint8
 		isError bool
 	}{
 		{
@@ -286,6 +286,18 @@ func TestCountDecimalPlacesInput(t *testing.T) {
 			name:    "normal5",
 			num:     "10000",
 			expect:  0,
+			isError: false,
+		},
+		{
+			name:    "normal6",
+			num:     ".10000",
+			expect:  1,
+			isError: false,
+		},
+		{
+			name:    "normal6",
+			num:     ".1",
+			expect:  1,
 			isError: false,
 		},
 	}

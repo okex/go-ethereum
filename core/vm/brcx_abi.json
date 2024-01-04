@@ -74,7 +74,7 @@
       {
         "internalType": "int64",
         "name": "dec",
-        "type": "int64"
+        "type": "uint8"
       }
     ],
     "stateMutability": "nonpayable",
