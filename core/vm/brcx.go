@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/dop251/goja"
@@ -21,6 +23,7 @@ const (
 	AToIWithDec             = "atoiWithDec"
 	ToLower                 = "toLower"
 	IsSrc20TickAllCharValid = "isSrc20TickAllCharValid"
+	CountDecimalPlaces      = "countDecimalPlaces"
 )
 
 const Src20TickMaxLength = 5
@@ -128,6 +131,26 @@ func DecodeToLowerInput(abi abi.ABI, input []byte) (string, error) {
 	return str, nil
 }
 
+func DecodeCountDecimalPlacesInput(abi abi.ABI, input []byte) (string, error) {
+	if !IsMatchFunction(abi, CountDecimalPlaces, input) {
+		return "", fmt.Errorf("decode precomplie call : input sginature is not %s", CountDecimalPlaces)
+	}
+
+	unpacked, err := DecodeInputParam(abi, CountDecimalPlaces, input)
+	if err != nil {
+		return "", fmt.Errorf("decode precomplie call : input unpack err :  %s", err)
+	}
+
+	if len(unpacked) != 1 {
+		return "", fmt.Errorf("decode precomplie call to CountDecimalPlaces input unpack err :  unpack data len expect 1 but got %v", len(unpacked))
+	}
+	str, ok := unpacked[0].(string)
+	if !ok {
+		return "", fmt.Errorf("decode precomplie call : input unpack err : num is not type of string")
+	}
+
+	return str, nil
+}
 func EncodeToLowerOutput(abi abi.ABI, result string) ([]byte, error) {
 	method, ok := abi.Methods[ToLower]
 	if !ok {
@@ -167,6 +190,8 @@ func (c *brcXContract) Run(input []byte) ([]byte, error) {
 		return toLower(input)
 	case IsSrc20TickAllCharValid:
 		return isSrc20TickAllCharValid(input)
+	case CountDecimalPlaces:
+		return countDecimalPlaces(input)
 	default:
 		return make([]byte, 0), fmt.Errorf("unsupport method: %s", method.Name)
 
@@ -223,10 +248,53 @@ func isSrc20TickAllCharValid(calldata []byte) ([]byte, error) {
 	return EncodeIsSrc20TickAllCharValidOutput(brcXABI, res)
 }
 
+func countDecimalPlaces(callData []byte) ([]byte, error) {
+	num, err := DecodeCountDecimalPlacesInput(brcXABI, callData)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	dec, err := countDec(num)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	return EncodeCountDecimalPlacesOutput(brcXABI, dec)
+}
+
+func countDec(rawNum string) (int64, error) {
+
+	num, err := strconv.ParseFloat(rawNum, 64)
+	if err != nil {
+		return -1, err
+	}
+
+	strNum := strconv.FormatFloat(num, 'f', -1, 64)
+
+	regex := regexp.MustCompile(`\.\d+`)
+	matches := regex.FindStringSubmatch(strNum)
+
+	if len(matches) == 1 {
+		decimalPlaces := len(matches[0]) - 1
+		return int64(decimalPlaces), nil
+	}
+
+	return 0, nil
+}
+
+func EncodeCountDecimalPlacesOutput(abi abi.ABI, dec int64) ([]byte, error) {
+	method, ok := abi.Methods[CountDecimalPlaces]
+	if !ok {
+		return make([]byte, 0), fmt.Errorf("can not found method for abi")
+	}
+
+	return method.Outputs.PackValues([]interface{}{dec})
+}
+
 func src20tickAllCharValid(data string) (bool, error) {
 	input := []rune(data)
 	if len(input) == 0 || len(input) > Src20TickMaxLength {
-		return false, fmt.Errorf("tick length %d invalid", len(data))
+		return false, fmt.Errorf("num length %d invalid", len(data))
 	}
 
 	vm := goja.New()
@@ -283,7 +351,7 @@ func DecodeIsSrc20TickAllCharValidInput(abi abi.ABI, input []byte) (string, erro
 
 	tick, ok := unpacked[0].(string)
 	if !ok {
-		return "", fmt.Errorf("decode precomplie call : input unpack err : tick is not type of string")
+		return "", fmt.Errorf("decode precomplie call : input unpack err : num is not type of string")
 	}
 	return tick, nil
 }

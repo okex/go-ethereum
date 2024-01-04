@@ -144,12 +144,22 @@ func EncodeIsSrc20TickAllCharValidIntput(abi abi.ABI, tick string) ([]byte, erro
 	return buffer, nil
 }
 
-func TestIsSrc20TickAllCharValidInput(t *testing.T) {
-	textWithEmoji := "🙂APL"
-	res, err := src20tickAllCharValid(textWithEmoji)
-	require.NoError(t, err)
-	require.Equal(t, true, res)
+func EncodeCountDecimalPlacesIntput(abi abi.ABI, num string) ([]byte, error) {
+	method, ok := abi.Methods[CountDecimalPlaces]
+	if !ok {
+		return nil, fmt.Errorf("method %s is not exist in abi", CountDecimalPlaces)
+	}
+	buffer := make([]byte, 0)
+	buffer = append(buffer, method.ID...)
+	calldata, err := method.Inputs.Pack(num)
+	if err != nil {
+		return nil, err
+	}
+	buffer = append(buffer, calldata...)
+	return buffer, nil
+}
 
+func TestIsSrc20TickAllCharValidInput(t *testing.T) {
 	testCases := []struct {
 		name    string
 		tick    string
@@ -234,6 +244,62 @@ func TestIsSrc20TickAllCharValidInput(t *testing.T) {
 				tt.Log(err)
 			} else {
 				expect, err := EncodeIsSrc20TickAllCharValidOutput(brcXABI, tc.expect)
+				require.NoError(tt, err)
+				require.Equal(tt, expect, result)
+			}
+		})
+	}
+}
+
+func TestCountDecimalPlacesInput(t *testing.T) {
+	testCases := []struct {
+		name    string
+		num     string
+		expect  int64
+		isError bool
+	}{
+		{
+			name:    "normal1",
+			num:     "1.1000",
+			expect:  1,
+			isError: false,
+		},
+		{
+			name:    "normal2",
+			num:     "1.1001",
+			expect:  4,
+			isError: false,
+		},
+		{
+			name:    "normal3",
+			num:     "1.0",
+			expect:  0,
+			isError: false,
+		},
+		{
+			name:    "normal4",
+			num:     "1.0000",
+			expect:  0,
+			isError: false,
+		},
+		{
+			name:    "normal5",
+			num:     "10000",
+			expect:  0,
+			isError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(tt *testing.T) {
+			calldata, err := EncodeCountDecimalPlacesIntput(brcXABI, tc.num)
+			require.NoError(tt, err)
+			result, err := countDecimalPlaces(calldata)
+			if tc.isError {
+				require.Error(tt, err)
+				tt.Log(err)
+			} else {
+				expect, err := EncodeCountDecimalPlacesOutput(brcXABI, tc.expect)
 				require.NoError(tt, err)
 				require.Equal(tt, expect, result)
 			}

@@ -60,5 +60,24 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "num",
+        "type": "string"
+      }
+    ],
+    "name": "countDecimalPlaces",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "dec",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]
