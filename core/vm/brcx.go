@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/dop251/goja"
@@ -261,6 +262,10 @@ func countDecimalPlaces(callData []byte) ([]byte, error) {
 }
 
 func countDec(strNumber string) (uint8, error) {
+	re := regexp.MustCompile(`^[0-9.]+$`)
+	if !re.MatchString(strNumber) {
+		return 0, fmt.Errorf("invalid fmt of num")
+	}
 	dotIndex := strings.Index(strNumber, ".")
 	if dotIndex == -1 {
 		return 0, nil
