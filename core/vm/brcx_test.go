@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"testing"
@@ -159,6 +160,21 @@ func EncodeCountDecimalPlacesIntput(abi abi.ABI, num string) ([]byte, error) {
 	return buffer, nil
 }
 
+func EncodeFmtInscriptionIntput(abi abi.ABI, num string) ([]byte, error) {
+	method, ok := abi.Methods[FmtInscription]
+	if !ok {
+		return nil, fmt.Errorf("method %s is not exist in abi", FmtInscription)
+	}
+	buffer := make([]byte, 0)
+	buffer = append(buffer, method.ID...)
+	calldata, err := method.Inputs.Pack(num)
+	if err != nil {
+		return nil, err
+	}
+	buffer = append(buffer, calldata...)
+	return buffer, nil
+}
+
 func TestIsSrc20TickAllCharValidInput(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -295,10 +311,16 @@ func TestCountDecimalPlacesInput(t *testing.T) {
 			isError: false,
 		},
 		{
-			name:    "normal6",
+			name:    "normal7",
 			num:     ".1",
 			expect:  1,
 			isError: false,
+		},
+		{
+			name:    "normal8",
+			num:     "100 00",
+			expect:  0,
+			isError: true,
 		},
 	}
 
@@ -312,6 +334,65 @@ func TestCountDecimalPlacesInput(t *testing.T) {
 				tt.Log(err)
 			} else {
 				expect, err := EncodeCountDecimalPlacesOutput(brcXABI, tc.expect)
+				require.NoError(tt, err)
+				require.Equal(tt, expect, result)
+			}
+		})
+	}
+}
+
+func TestFmtInscriptionInput(t *testing.T) {
+	testCases := []struct {
+		name    string
+		num     string
+		expect  string
+		isError bool
+	}{
+		{
+			name:    "normal1",
+			num:     "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"1.1000\"}",
+			expect:  "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"1.1000\"}",
+			isError: false,
+		},
+		{
+			name:    "normal2",
+			num:     "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"\"}",
+			expect:  "",
+			isError: true,
+		},
+		{
+			name:    "normal3",
+			num:     "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\": 5000}",
+			expect:  "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"5000\"}",
+			isError: false,
+		},
+		{
+			name:    "normal3",
+			num:     "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\": 5000.000}",
+			expect:  "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"5000\"}",
+			isError: false,
+		},
+		{
+			name:    "normal3",
+			num:     "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\": 5000.001}",
+			expect:  "{\"p\":\"src-20\",\"op\":\"mint\",\"tick\":\"SATO\",\"amt\":\"5000.001\"}",
+			isError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(tt *testing.T) {
+			calldata, err := EncodeFmtInscriptionIntput(brcXABI, tc.num)
+			require.NoError(tt, err)
+			result, err := fmtInscription(calldata)
+			if tc.isError {
+				require.Error(tt, err)
+				tt.Log(err)
+			} else {
+				tmp := map[string]string{}
+				json.Unmarshal([]byte(tc.expect), &tmp)
+				ex, _ := json.Marshal(tmp)
+				expect, err := EncodeFmtInscriptionOutput(brcXABI, string(ex))
 				require.NoError(tt, err)
 				require.Equal(tt, expect, result)
 			}

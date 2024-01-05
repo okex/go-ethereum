@@ -3,11 +3,13 @@ package vm
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/dop251/goja"
@@ -23,6 +25,7 @@ const (
 	ToLower                 = "toLower"
 	IsSrc20TickAllCharValid = "isSrc20TickAllCharValid"
 	CountDecimalPlaces      = "countDecimalPlaces"
+	FmtInscription          = "fmtInscription"
 )
 
 const Src20TickMaxLength = 5
@@ -150,6 +153,16 @@ func DecodeCountDecimalPlacesInput(abi abi.ABI, input []byte) (string, error) {
 
 	return str, nil
 }
+
+func EncodeCountDecimalPlacesOutput(abi abi.ABI, dec uint8) ([]byte, error) {
+	method, ok := abi.Methods[CountDecimalPlaces]
+	if !ok {
+		return make([]byte, 0), fmt.Errorf("can not found method for abi")
+	}
+
+	return method.Outputs.PackValues([]interface{}{dec})
+}
+
 func EncodeToLowerOutput(abi abi.ABI, result string) ([]byte, error) {
 	method, ok := abi.Methods[ToLower]
 	if !ok {
@@ -166,6 +179,55 @@ func EncodeIsSrc20TickAllCharValidOutput(abi abi.ABI, result bool) ([]byte, erro
 	}
 
 	return method.Outputs.PackValues([]interface{}{result})
+}
+
+func DecodeIsSrc20TickAllCharValidInput(abi abi.ABI, input []byte) (string, error) {
+	if !IsMatchFunction(abi, IsSrc20TickAllCharValid, input) {
+		return "", fmt.Errorf("decode precomplie call : input sginature is not %s", IsSrc20TickAllCharValid)
+	}
+	unpacked, err := DecodeInputParam(abi, IsSrc20TickAllCharValid, input)
+	if err != nil {
+		return "", fmt.Errorf("decode precomplie call : input unpack err :  %s", err)
+	}
+	if len(unpacked) != 1 {
+		return "", fmt.Errorf("decode precomplie call unpack err :  unpack data len expect 1 but got %v", len(unpacked))
+	}
+
+	tick, ok := unpacked[0].(string)
+	if !ok {
+		return "", fmt.Errorf("decode precomplie call : input unpack err : num is not type of string")
+	}
+	return tick, nil
+}
+
+func DecodeFmtInscriptionInput(abi abi.ABI, input []byte) (string, error) {
+	if !IsMatchFunction(abi, FmtInscription, input) {
+		return "", fmt.Errorf("decode precomplie call : input sginature is not %s", FmtInscription)
+	}
+
+	unpacked, err := DecodeInputParam(abi, FmtInscription, input)
+	if err != nil {
+		return "", fmt.Errorf("decode precomplie call : input unpack err :  %s", err)
+	}
+
+	if len(unpacked) != 1 {
+		return "", fmt.Errorf("decode precomplie call to FmtInscription input unpack err :  unpack data len expect 1 but got %v", len(unpacked))
+	}
+	str, ok := unpacked[0].(string)
+	if !ok {
+		return "", fmt.Errorf("decode precomplie call : input unpack err : num is not type of string")
+	}
+
+	return str, nil
+}
+
+func EncodeFmtInscriptionOutput(abi abi.ABI, res string) ([]byte, error) {
+	method, ok := abi.Methods[FmtInscription]
+	if !ok {
+		return make([]byte, 0), fmt.Errorf("can not found method for abi")
+	}
+
+	return method.Outputs.PackValues([]interface{}{res})
 }
 
 // atoiwithdec convert to integer from str with decimal
@@ -191,6 +253,8 @@ func (c *brcXContract) Run(input []byte) ([]byte, error) {
 		return isSrc20TickAllCharValid(input)
 	case CountDecimalPlaces:
 		return countDecimalPlaces(input)
+	case FmtInscription:
+		return fmtInscription(input)
 	default:
 		return make([]byte, 0), fmt.Errorf("unsupport method: %s", method.Name)
 
@@ -262,8 +326,7 @@ func countDecimalPlaces(callData []byte) ([]byte, error) {
 }
 
 func countDec(strNumber string) (uint8, error) {
-	re := regexp.MustCompile(`^[0-9.]+$`)
-	if !re.MatchString(strNumber) {
+	if !validNumFmt(strNumber) {
 		return 0, fmt.Errorf("invalid fmt of num")
 	}
 	dotIndex := strings.Index(strNumber, ".")
@@ -282,13 +345,74 @@ func countDec(strNumber string) (uint8, error) {
 	return uint8(res), nil
 }
 
-func EncodeCountDecimalPlacesOutput(abi abi.ABI, dec uint8) ([]byte, error) {
-	method, ok := abi.Methods[CountDecimalPlaces]
-	if !ok {
-		return make([]byte, 0), fmt.Errorf("can not found method for abi")
+func fmtInscription(callData []byte) ([]byte, error) {
+	inscription, err := DecodeFmtInscriptionInput(brcXABI, callData)
+	if err != nil {
+		return make([]byte, 0), err
 	}
 
-	return method.Outputs.PackValues([]interface{}{dec})
+	res, err := fmtInscriptionCore(inscription)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	return EncodeFmtInscriptionOutput(brcXABI, res)
+}
+
+func fmtInscriptionCore(inscription string) (string, error) {
+	mapInscription := make(map[string]interface{})
+	err := json.Unmarshal([]byte(inscription), &mapInscription)
+	if err != nil {
+		return "", nil
+	}
+	if amt, ok := mapInscription["amt"]; ok {
+		amtStr, err := validNumValue(amt)
+		if err != nil {
+			return "", err
+		}
+		mapInscription["amt"] = amtStr
+	}
+	if lim, ok := mapInscription["lim"]; ok {
+		limStr, err := validNumValue(lim)
+		if err != nil {
+			return "", err
+		}
+		mapInscription["lim"] = limStr
+	}
+	if max, ok := mapInscription["max"]; ok {
+		maxStr, err := validNumValue(max)
+		if err != nil {
+			return "", err
+		}
+		mapInscription["max"] = maxStr
+	}
+
+	res, err := json.Marshal(mapInscription)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
+
+func validNumValue(num interface{}) (string, error) {
+	res := ""
+	switch num.(type) {
+	case string:
+		res = num.(string)
+	case float64:
+		res = strconv.FormatFloat(num.(float64), 'f', -1, 64)
+	default:
+		return "", fmt.Errorf("invalid value of num")
+	}
+	if !validNumFmt(res) {
+		return "", fmt.Errorf("invalid fmt of num")
+	}
+	return res, nil
+}
+
+func validNumFmt(numStr string) bool {
+	re := regexp.MustCompile(`^[0-9.]+$`)
+	return re.MatchString(numStr)
 }
 
 func src20tickAllCharValid(data string) (bool, error) {
@@ -335,23 +459,4 @@ func src20tickAllCharValid(data string) (bool, error) {
 		return false, fmt.Errorf("error calling function %s", err.Error())
 	}
 	return res.ToBoolean(), nil
-}
-
-func DecodeIsSrc20TickAllCharValidInput(abi abi.ABI, input []byte) (string, error) {
-	if !IsMatchFunction(abi, IsSrc20TickAllCharValid, input) {
-		return "", fmt.Errorf("decode precomplie call : input sginature is not %s", IsSrc20TickAllCharValid)
-	}
-	unpacked, err := DecodeInputParam(abi, IsSrc20TickAllCharValid, input)
-	if err != nil {
-		return "", fmt.Errorf("decode precomplie call : input unpack err :  %s", err)
-	}
-	if len(unpacked) != 1 {
-		return "", fmt.Errorf("decode precomplie call unpack err :  unpack data len expect 1 but got %v", len(unpacked))
-	}
-
-	tick, ok := unpacked[0].(string)
-	if !ok {
-		return "", fmt.Errorf("decode precomplie call : input unpack err : num is not type of string")
-	}
-	return tick, nil
 }

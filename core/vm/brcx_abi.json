@@ -79,5 +79,24 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "inscription",
+        "type": "string"
+      }
+    ],
+    "name": "fmtInscription",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "inscription",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]
