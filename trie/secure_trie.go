@@ -271,6 +271,9 @@ func (t *StateTrie) NodeIterator(start []byte) NodeIterator {
 // The caller must not hold onto the return value because it will become
 // invalid on the next call to hashKey or secKey.
 func (t *StateTrie) hashKey(key []byte) []byte {
+	if len(key) <= common.HashLength {
+		return key
+	}
 	h := newHasher(false)
 	h.sha.Reset()
 	h.sha.Write(key)
