@@ -184,6 +184,21 @@ func (n *cachedNode) forChilds(onChild func(hash common.Hash)) {
 	}
 }
 
+func (n *cachedNode) copy() *cachedNode {
+	cn := &cachedNode{
+		node:      n.node,
+		size:      n.size,
+		parents:   n.parents,
+		children:  make(map[common.Hash]uint16, len(n.children)),
+		flushPrev: n.flushPrev,
+		flushNext: n.flushNext,
+	}
+	for k, v := range n.children {
+		cn.children[k] = v
+	}
+	return cn
+}
+
 // forGatherChildren traverses the node hierarchy of a collapsed storage node and
 // invokes the callback for all the hashnode children.
 func forGatherChildren(n node, onChild func(hash common.Hash)) {
@@ -659,7 +674,15 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	nodes, storage := len(db.dirties), db.dirtiesSize
 
 	uncacher := &cleaner{db}
-	if err := db.commit(node, batch, uncacher, callback); err != nil {
+
+	db.lock.RLock()
+	dirtiesTmp := make(map[common.Hash]*cachedNode, len(db.dirties))
+	for k, v := range db.dirties {
+		dirtiesTmp[k] = v.copy()
+	}
+	db.lock.RUnlock()
+
+	if err := db.commit(node, batch, uncacher, callback, dirtiesTmp); err != nil {
 		log.Error("Failed to commit trie from trie database", "err", err)
 		return err
 	}
@@ -695,16 +718,16 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 }
 
 // commit is the private locked version of Commit.
-func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner, callback func(common.Hash)) error {
+func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner, callback func(common.Hash), dirties map[common.Hash]*cachedNode) error {
 	// If the node does not exist, it's a previously committed node
-	node, ok := db.dirties[hash]
+	node, ok := dirties[hash]
 	if !ok {
 		return nil
 	}
 	var err error
 	node.forChilds(func(child common.Hash) {
 		if err == nil {
-			err = db.commit(child, batch, uncacher, callback)
+			err = db.commit(child, batch, uncacher, callback, dirties)
 		}
 	})
 	if err != nil {
